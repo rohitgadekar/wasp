@@ -64,7 +64,7 @@ const Layout = ({ children }: LayoutProps) => {
                 </div>
                 <div className="flex flex-col leading-none">
                   <span className="text-2xl font-cinzel font-semibold tracking-[0.1em] bg-clip-text text-transparent bg-gradient-to-r from-[#2C241B] via-[#94764D] to-[#2C241B]">WASP</span>
-                  <span className="text-[9px] font-sans font-bold text-[#8C7654] tracking-[0.25em] uppercase mt-1">Swarm Engine</span>
+                  <span className="text-[9px] font-sans font-bold text-[#8C7654] tracking-[0.25em] uppercase mt-1">SIGNED BUILD</span>
                 </div>
               </div>
 
