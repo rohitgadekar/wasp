@@ -1,0 +1,302 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Luxury Light Mode – Ivory, Gold, & Deep Charcoal */
+    --background: 30 20% 98%;
+    /* Warm Ivory */
+    --foreground: 20 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 10% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 10% 15%;
+
+    --primary: 43 43% 45%;
+    /* Burnished Gold */
+    --primary-foreground: 30 20% 98%;
+
+    --secondary: 30 10% 92%;
+    --secondary-foreground: 20 10% 15%;
+
+    --date-added: 160 30% 90%;
+    --date-added-foreground: 160 50% 20%;
+
+    --date-modified: 45 40% 90%;
+    --date-modified-foreground: 45 60% 20%;
+
+    --muted: 30 10% 92%;
+    --muted-foreground: 20 10% 45%;
+
+    --accent: 43 43% 45%;
+    /* Gold Accent */
+    --accent-foreground: 30 20% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 30 10% 85%;
+    --input: 30 10% 85%;
+    --ring: 43 43% 45%;
+    --radius: 0.5rem;
+    /* Sharper, more professional edges */
+
+    --code-bg: 240 10% 3.9%;
+    --code-border: 240 5.9% 15%;
+
+    --sidebar-background: 30 20% 97%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 43 43% 45%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 30 10% 92%;
+    --sidebar-border: 30 10% 85%;
+  }
+
+  .dark {
+    /* Luxury Dark Mode – Obsidian, Champagne Gold, & Silver */
+    --background: 240 10% 3.9%;
+    --foreground: 30 20% 90%;
+    /* Soft Silver/White */
+
+    --card: 240 10% 5%;
+    --card-foreground: 30 20% 90%;
+
+    --popover: 240 10% 6%;
+    --popover-foreground: 30 20% 90%;
+
+    --primary: 43 43% 60%;
+    /* Champagne Gold */
+    --primary-foreground: 240 10% 4%;
+
+    --secondary: 240 3.7% 12%;
+    --secondary-foreground: 30 20% 90%;
+
+    --muted: 240 3.7% 12%;
+    --muted-foreground: 240 5% 60%;
+
+    --accent: 43 43% 60%;
+    --accent-foreground: 240 10% 4%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15%;
+    --input: 240 3.7% 15%;
+    --ring: 43 43% 60%;
+
+    --code-bg: 0 0% 2%;
+    --code-border: 43 43% 20%;
+
+    --sidebar-background: 240 10% 4%;
+    --sidebar-foreground: 30 20% 85%;
+    --sidebar-primary: 43 43% 60%;
+    --sidebar-primary-foreground: 240 10% 4%;
+    --sidebar-accent: 240 3.7% 12%;
+    --sidebar-border: 240 3.7% 15%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', sans-serif;
+    @apply tracking-tight font-semibold;
+  }
+
+  .luxury-heading {
+    font-family: 'Cormorant Garamond', serif;
+    @apply tracking-wide font-medium italic;
+  }
+}
+
+.glass-card {
+  @apply bg-white/80 dark:bg-black/70 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl;
+}
+
+.glass-input {
+  @apply bg-white/90 dark:bg-black/80 backdrop-blur-2xl border border-white/40 dark:border-white/20 focus:bg-white dark:focus:bg-black transition-all duration-300 shadow-md focus:shadow-xl;
+}
+
+body>div:last-child>span+img {
+  display: inline !important;
+}
+
+
+@property --angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+.card {
+  /* --angle: 0deg; */
+  /* padding: 40px; */
+  background: linear-gradient(rgb(212, 157, 75), rgb(212, 157, 75)) padding-box,
+    conic-gradient(from var(--angle), #181c1a, hsla(0, 0%, 100%, 0.847)) border-box;
+  border: 2px solid transparent;
+  animation: rotate-gradient 3s infinite linear;
+}
+
+@keyframes rotate-gradient {
+  from {
+    --angle: 0deg;
+  }
+
+  to {
+    --angle: 360deg;
+  }
+}
+
+.hide-scrollbar {
+  /* Hide scrollbar for IE and Edge */
+  -ms-overflow-style: none;
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Premium Login Page Animations */
+@keyframes blob {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate(20px, -50px) scale(1.1);
+  }
+
+  50% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  75% {
+    transform: translate(50px, 50px) scale(1.05);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-100vh) translateX(50px);
+    opacity: 0;
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animate-float {
+  animation: float 10s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 100px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.6);
+  background-clip: padding-box;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/*
+Source - https://stackoverflow.com/a/14035950
+Posted by Musa
+Retrieved 2026-04-21, License - CC BY-SA 3.0
+*/
+
+.dotbox {
+  border: none;
+  border: 1px dashed #a48841;
+  outline: none;
+}
+/* Force Autofill background to match theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: inherit !important;
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: inset 0 0 20px 20px transparent !important;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+

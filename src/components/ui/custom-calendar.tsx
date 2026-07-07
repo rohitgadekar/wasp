@@ -1,0 +1,169 @@
+// components/custom/CalendarWithDots.tsx
+import * as React from "react";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface CalendarWithDotsProps {
+    selected?: Date;
+    onSelect?: (date: Date) => void;
+    onMonthChange?: (date: Date) => void;
+    monthStats: Record<string, { total: number }>; // yyyy-MM-dd → count
+    holidays?: Record<string, string>; // yyyy-MM-dd → Holiday Name
+    className?: string;
+}
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function CalendarWithDots({
+    selected,
+    onSelect,
+    onMonthChange,
+    monthStats,
+    holidays,
+    className,
+}: CalendarWithDotsProps) {
+    const [currentMonth, setCurrentMonth] = React.useState(selected || new Date());
+
+    React.useEffect(() => {
+        if (selected) {
+            setCurrentMonth(selected);
+        }
+    }, [selected]);
+
+    const start = startOfMonth(currentMonth);
+    const end = endOfMonth(currentMonth);
+    const days = eachDayOfInterval({ start, end });
+
+    // Add empty cells for days before month start
+    const firstDayOfWeek = start.getDay();
+    const leadingDays = Array(firstDayOfWeek).fill(null);
+
+    const prevMonth = () => {
+        const newMonth = subMonths(currentMonth, 1);
+        setCurrentMonth(newMonth);
+        onMonthChange?.(newMonth);
+    };
+
+    const nextMonth = () => {
+        const newMonth = addMonths(currentMonth, 1);
+        setCurrentMonth(newMonth);
+        onMonthChange?.(newMonth);
+    };
+
+    const hasData = (date: Date) => {
+        const key = format(date, "yyyy-MM-dd");
+        return monthStats[key]?.total > 0;
+    };
+
+    const getHolidayName = (date: Date) => {
+        const key = format(date, "yyyy-MM-dd");
+        return holidays?.[key];
+    };
+
+    return (
+        <div className={cn("w-full  mx-auto bg-card rounded-lg  ", className)}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+                <button
+                    onClick={prevMonth}
+                    className="p-2 rounded-md hover:bg-accent transition-colors hover:text-white"
+                    aria-label="Previous month"
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-lg font-semibold">
+                    {format(currentMonth, "MMMM yyyy")}
+                </h2>
+                <button
+                    onClick={nextMonth}
+                    className="p-2 rounded-md hover:bg-accent transition-colors hover:text-white"
+                    aria-label="Next month"
+                >
+                    <ChevronRight className="w-5 h-5" />
+                </button>
+            </div>
+
+            {/* Weekdays */}
+            <div className="grid grid-cols-7 gap-1 p-3">
+                {WEEKDAYS.map((day) => (
+                    <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+                        {day}
+                    </div>
+                ))}
+            </div>
+
+            {/* Days */}
+            <div className="grid grid-cols-7 gap-1 px-3 pb-4">
+                {/* Leading empty cells */}
+                {leadingDays.map((_, i) => (
+                    <div key={`empty-${i}`} />
+                ))}
+
+                {/* Actual days */}
+                {days.map((day) => {
+                    const isSelected = selected && isSameDay(day, selected);
+                    const isToday = isSameDay(day, new Date());
+                    const dataExists = hasData(day);
+                    const holidayName = getHolidayName(day);
+                    const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+
+                    return (
+                        <button
+                            key={day.toISOString()}
+                            onClick={() => onSelect?.(day)}
+                            className={cn(
+                                "relative flex items-center justify-center w-10 h-10 rounded-full text-sm transition-all",
+                                "hover:bg-[#997C53] hover:text-accent-foreground",
+                                isSelected && "bg-[#2C241B] text-primary-foreground font-bold shadow-md",
+                                isToday && !isSelected && "font-bold text-[#2C241B] ring-2 ring-[#997C53]/50",
+                                dataExists && !isSelected && "font-bold text-[#2C241B]",
+                                isWeekend && !isSelected && !dataExists && "text-muted-foreground/40 bg-muted/30",
+                                holidayName && !isSelected && "text-orange-500 font-bold bg-orange-500/10"
+                            )}
+                            title={holidayName || (isWeekend ? "Weekend Off" : undefined)}
+                            aria-label={format(day, "PPP")}
+                        >
+                            {format(day, "d")}
+
+                            {/* Dot indicator for activity */}
+                            {dataExists && (
+                                <span
+                                    className={cn(
+                                        "absolute bottom-1 w-1.5 h-1.5 rounded-full",
+                                        isSelected ? "bg-primary-foreground" : "bg-[#997C53]"
+                                    )}
+                                />
+                            )}
+
+                            {/* Dot indicator for holiday */}
+                            {/* Dot indicator for holiday */}
+                            {holidayName && !dataExists && (
+                                <span
+                                    className={cn(
+                                        "absolute bottom-1 w-1.5 h-1.5 rounded-full",
+                                        isSelected ? "bg-primary-foreground" : "bg-orange-500"
+                                    )}
+                                />
+                            )}
+
+                            {/* Holiday Bubble Indicator */}
+                            {holidayName && !dataExists && !isSelected && (
+                                <span className="absolute -top-1 -right-3 text-[8px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full uppercase border border-orange-200 shadow-sm z-10">
+                                    Off
+                                </span>
+                            )}
+
+                            {/* Weekend indicator if no data and not a holiday */}
+                            {isWeekend && !dataExists && !isSelected && !holidayName && (
+                                <span className="absolute -top-1 -right-1 text-[8px] font-bold text-muted-foreground/30 px-1 rounded-full uppercase">
+                                    Off
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
