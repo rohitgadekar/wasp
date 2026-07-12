@@ -48,7 +48,7 @@ const Layout = ({ children }: LayoutProps) => {
   const isToolsActive = toolsItems.some(item => location.pathname === item.to);
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-tr from-[#FAF9F5] via-[#FDFDFB] to-[#F3EEE3] select-none">
+    <div className="flex min-h-screen flex-col select-none">
       <header className="fixed top-4 left-0 right-0 z-50 px-6 transition-all duration-500 ease-out">
         <div className="container mx-auto">
           <div className="rounded-[2.5rem] px-8 py-3 flex items-center justify-between shadow-[0_20px_40px_rgba(197,168,128,0.15)] backdrop-blur-2xl bg-[#FDFDFB]/85 border border-[#E5DCCB] transition-all duration-500 ease-out hover:shadow-[0_25px_50px_rgba(197,168,128,0.2)] hover:bg-[#FDFDFB]/95">

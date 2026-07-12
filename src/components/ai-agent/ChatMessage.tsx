@@ -48,13 +48,13 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
           <div className={cn(
             "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-2xl  group-hover:scale-110 group-hover:rotate-3",
             message.role === 'user'
-              ? "bg-primary text-primary-foreground"
+              ? "bg-[#BFA378] text-primary-foreground"
               : "bg-white dark:bg-zinc-900 border border-white/20"
           )}>
             {message.role === 'user' ? (
-              <User className="w-5 h-5 md:w-6 md:h-6" />
+              <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-white">You</span>
             ) : (
-              <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
+                    <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
             )}
           </div>
           {message.role === 'assistant' && (
@@ -90,9 +90,9 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
 
           {/* Message Bubble */}
           <div className={cn(
-            "relative group/bubble px-6 py-4 rounded-[2rem] text-[15.5px] leading-relaxed shadow-2xl backdrop-blur-2xl break-words w-full select-text cursor-auto",
+            "relative group/bubble px-6 py-4 rounded-[1em] text-[15.5px] leading-relaxed shadow-2xl backdrop-blur-2xl break-words w-full select-text cursor-auto",
             message.role === 'user'
-              ? "bg-primary text-primary-foreground shadow-primary/20"
+              ? "bg-[#BFA378] text-primary-foreground shadow-primary/20"
               : "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-3xl border border-black/5 dark:border-white/5 text-foreground shadow-black/5 dark:shadow-black/20"
           )}>
             <div className="prose prose-sm dark:prose-invert max-w-none break-words select-text cursor-text">
