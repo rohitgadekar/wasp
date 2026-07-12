@@ -478,11 +478,12 @@ const MapGenerator = () => {
                                     <p className="text-[10px] font-medium mt-0.5" style={{ color: '#A59582' }}>Define architectural parameters for name generation</p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <Button variant="ghost" onClick={resetForm} className="rounded-full px-5 h-9 text-xs font-bold uppercase tracking-widest border transition-all" style={{ color: '#C0392B', borderColor: '#E3DAC9' }}>
-                                        <RefreshCw className="mr-2 h-3.5 w-3.5" />Reset
+                                    
+                                     <Button onClick={resetForm} className="rounded-full px-6 h-9 text-xs font-bold uppercase tracking-widest border-0 shadow-md transition-all hover:scale-105" style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B' }}>
+                                    Reset
                                     </Button>
                                     <Button onClick={generateMapName} className="rounded-full px-6 h-9 text-xs font-bold uppercase tracking-widest border-0 shadow-md transition-all hover:scale-105" style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B' }}>
-                                        <Sparkles className="mr-2 h-3.5 w-3.5" />Construct Name
+                                    Generate
                                     </Button>
                                 </div>
                             </div>

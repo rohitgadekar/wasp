@@ -39,10 +39,10 @@ const Layout = ({ children }: LayoutProps) => {
   const [showBanner, setShowBanner] = useState(false);
 
   const toolsItems = [
-    { to: '/csv-visualizer', icon: Table2, label: 'CSV Visualizer', description: 'Data table inspection' },
-    { to: '/map-generator', icon: FolderPen, label: 'Map Name Generator', description: 'Generate Jira maps' },
-    { to: '/document-finder', icon: Search, label: 'Document Finder', description: 'Search knowledge base' },
-    ...(hasHiveAccess ? [{ to: '/hive', icon: Puzzle, label: 'Hive', description: 'Chrome extension setup' }] : []),
+    { to: '/csv-visualizer', icon: Table2, label: 'CSV Visualizer', description: 'Data Table Inspection' },
+    { to: '/map-generator', icon: FolderPen, label: 'Map Name Generator', description: 'Generate Map Name' },
+    { to: '/document-finder', icon: Search, label: 'Document Finder', description: 'Search EDI Documents' },
+    ...(hasHiveAccess ? [{ to: '/hive', icon: Puzzle, label: 'Hive', description: 'Chrome Extension' }] : []),
   ];
 
   const isToolsActive = toolsItems.some(item => location.pathname === item.to);
@@ -87,10 +87,10 @@ const Layout = ({ children }: LayoutProps) => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="center" className="bg-[#FDFDFB]/95 backdrop-blur-xl border border-[#E5DCCB] rounded-3xl p-3 min-w-[280px] shadow-[0_30px_90px_rgba(197,168,128,0.18)] animate-in zoom-in-95 fade-in-0 duration-300">
                     {[
-                      { to: '/', icon: Code2, label: 'Library', description: 'Code asset repository' },
-                      { to: '/wiki', icon: BookOpen, label: 'Wiki', description: 'Documentation & guides' },
+                      { to: '/', icon: Code2, label: 'Library', description: 'Code Asset Repository' },
+                      { to: '/wiki', icon: BookOpen, label: 'Wiki', description: 'Documentation & Guides' },
                       { to: '/scripts', icon: Terminal, label: 'Scripts', description: 'Automated utilities' },
-                      { to: '/maps', icon: SiJira, label: 'Maps', description: 'Project cartography' },
+                      { to: '/maps', icon: SiJira, label: 'Maps', description: 'Reference Maps Library' },
                     ].map((item) => (
                       <DropdownMenuItem key={item.to} asChild className="rounded-2xl focus:bg-[#FAF8F5] p-3 transition-all duration-500 ease-out group cursor-pointer border border-transparent hover:border-[#E5DCCB]/50 transform-gpu">
                         <NavLink to={item.to} className="flex items-start gap-4 w-full">
@@ -124,9 +124,9 @@ const Layout = ({ children }: LayoutProps) => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="center" className="bg-[#FDFDFB]/95 backdrop-blur-xl border border-[#E5DCCB] rounded-3xl p-3 min-w-[280px] shadow-[0_30px_90px_rgba(197,168,128,0.18)] animate-in zoom-in-95 fade-in-0 duration-300">
                     {[
-                      { to: '/status', icon: Calendar, label: 'Logs', description: 'Daily activity tracking' },
-                      { to: '/leaderboard', icon: Trophy, label: 'Ranks', description: 'Team contribution metrics' },
-                      { to: '/leaves', icon: Calendar, label: 'Leaves', description: 'Time-off management' },
+                      { to: '/status', icon: Calendar, label: 'Logs', description: 'Daily Activity Tracking' },
+                      { to: '/leaderboard', icon: Trophy, label: 'Ranks', description: 'Team Contribution Metrics' },
+                      { to: '/leaves', icon: Calendar, label: 'Leaves', description: 'Time-off Management' },
                     ].map((item) => (
                       <DropdownMenuItem key={item.to} asChild className="rounded-2xl focus:bg-[#FAF8F5] p-3 transition-all duration-500 ease-out group cursor-pointer border border-transparent hover:border-[#E5DCCB]/50 transform-gpu">
                         <NavLink to={item.to} className="flex items-start gap-4 w-full">
