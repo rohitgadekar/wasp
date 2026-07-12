@@ -182,7 +182,7 @@ const Layout = ({ children }: LayoutProps) => {
                     activeClassName="bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D] hover:text-[#2C241B]"
                   >
                     <Users className="h-4 w-4" />
-                    Admin
+                    People
                   </NavLink>
                 )}
               </nav>

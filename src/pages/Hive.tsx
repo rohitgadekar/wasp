@@ -1,11 +1,19 @@
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, Puzzle, Settings, FolderArchive, ArrowRight, CheckCircle2, Hexagon, Sparkles, Shield, Zap } from "lucide-react";
+import { Download, ExternalLink, Puzzle, Settings, FolderArchive, CheckCircle2, Hexagon, Sparkles, Shield, Zap, Lock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTitle } from "@/hooks/use-title";
+import { useHiveAccess } from "@/hooks/useHiveAccess";
+import { useAuth } from "@/lib/auth";
+import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Hive = () => {
   useTitle("Hive Extension");
+
+  const { hasAccess, loading } = useHiveAccess();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Extension download URL
   const downloadUrl = "https://nslyikktilelnqigidvk.supabase.co/storage/v1/object/public/extension/hive.zip";
@@ -15,39 +23,92 @@ const Hive = () => {
       title: "Download Extension",
       description: "Click the download button to get the Hive ZIP archive.",
       icon: FolderArchive,
-      color: "from-primary/20 to-primary/5 text-primary border-primary/20",
     },
     {
       title: "Extract the File",
       description: "Extract the contents of the ZIP file to a secure directory on your local computer.",
       icon: FolderArchive,
-      color: "from-primary/20 to-primary/5 text-primary border-primary/20",
     },
     {
       title: "Open Extensions",
       description: "Launch Google Chrome and navigate to chrome://extensions in the address bar.",
       icon: ExternalLink,
-      color: "from-primary/20 to-primary/5 text-primary border-primary/20",
     },
     {
       title: "Developer Mode",
       description: "Enable the 'Developer mode' toggle in the top right corner of the extension interface.",
       icon: Settings,
-      color: "from-primary/20 to-primary/5 text-primary border-primary/20",
     },
     {
       title: "Load Unpacked",
       description: "Click 'Load unpacked' and select the directory where you extracted the Hive files.",
       icon: Puzzle,
-      color: "from-primary/20 to-primary/5 text-primary border-primary/20",
     },
     {
       title: "Ready to Sync",
       description: "Hive is installed! Pin it to your browser toolbar for quick navigation and mapping.",
       icon: CheckCircle2,
-      color: "from-primary/20 to-primary/10 text-primary border-primary/20",
     },
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Access denied state
+  if (!hasAccess) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 text-center overflow-hidden">
+        {/* Ambient glows */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px] animate-pulse pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-[120px] animate-pulse pointer-events-none" style={{ animationDelay: '1.5s' }} />
+
+        <div className="relative z-10 max-w-lg w-full flex flex-col items-center">
+          {/* Icon */}
+          <div className="relative mb-10">
+            <div className="w-28 h-28 rounded-3xl flex items-center justify-center shadow-2xl"
+              style={{ background: 'linear-gradient(135deg, #2C241B 0%, #4A3C2E 100%)', border: '1px solid rgba(197,168,128,0.2)' }}>
+              <Hexagon className="h-12 w-12" style={{ color: '#C5A880' }} />
+            </div>
+            {/* Lock badge */}
+            <div className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full flex items-center justify-center shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)' }}>
+              <Lock className="w-4 h-4" style={{ color: '#2C241B' }} />
+            </div>
+          </div>
+
+          {/* Heading */}
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 leading-tight" style={{ color: '#2C241B' }}>
+            Hey, {user?.user_metadata?.full_name?.split(' ')[0] || 'there'}
+            <br />
+            <span className="bg-clip-text text-transparent"
+              style={{ backgroundImage: 'linear-gradient(135deg, #C5A880, #A8896A)' }}>
+              Hive isn't yours yet.
+            </span>
+          </h1>
+
+          <p className="text-base font-medium leading-relaxed mb-10 max-w-sm" style={{ color: '#A59582' }}>
+            The Hive extension is access-controlled. Ask your owner to flip the switch for your account in User Management.
+          </p>
+
+          {/* CTA */}
+          <Button
+            onClick={() => navigate('/')}
+            size="lg"
+            className="rounded-full px-10 h-13 text-sm font-bold uppercase tracking-widest border-0 shadow-xl transition-all hover:scale-105 active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B' }}
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen">
@@ -113,7 +174,6 @@ const Hive = () => {
               <div key={index} className="relative p-5 rounded-xl border group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg" style={{ background: '#FDFDFB', borderColor: '#E3DAC9', boxShadow: '0 2px 12px rgba(44,36,27,0.05)' }}>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(197,168,128,0.12)', color: '#8C7654', border: '1px solid #E3DAC9' }}>
                       {index + 1}
                     </div>

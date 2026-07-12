@@ -7,9 +7,7 @@ import { format } from 'date-fns';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -31,22 +29,15 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Shield, User as UserIcon, Trash2, Loader2, UserCircle, Users, Fingerprint, Settings2, Mail, Key, ShieldCheck, UserCog, AlertCircle, ChevronDown } from 'lucide-react';
+import { UserPlus, Shield, Trash2, Loader2, UserCircle, Mail, Key, ShieldCheck, AlertCircle, ChevronDown, Hexagon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -57,6 +48,10 @@ interface UserProfile {
   full_name: string;
   created_at: string;
   user_roles?: Array<{ role: string }>;
+}
+
+interface HiveAccessMap {
+  [userId: string]: boolean;
 }
 
 const UserManagement = () => {
@@ -112,18 +107,60 @@ const UserManagement = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles (role)
-        `)
+        .select(`*, user_roles (role)`)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       return data as UserProfile[];
     },
     enabled: !!userRole && (userRole === 'moderator' || userRole === 'owner'),
   });
 
+  // Fetch hive access map for all users
+  const { data: hiveAccessMap = {} } = useQuery<HiveAccessMap>({
+    queryKey: ['hive_access_all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hive_access')
+        .select('user_id, enabled');
+      if (error) throw error;
+      return Object.fromEntries((data ?? []).map(r => [r.user_id, r.enabled]));
+    },
+    enabled: userRole === 'owner',
+  });
+
+  const [hiveToggleLoading, setHiveToggleLoading] = useState<string | null>(null);
+
+  const handleHiveToggle = async (targetUserId: string, currentEnabled: boolean) => {
+    if (userRole !== 'owner') return;
+    setHiveToggleLoading(targetUserId);
+
+    // Upsert — handles both first-time and subsequent toggles
+    const { error } = await supabase
+      .from('hive_access')
+      .upsert(
+        {
+          user_id: targetUserId,
+          enabled: !currentEnabled,
+          granted_by: user?.id,
+          granted_at: !currentEnabled ? new Date().toISOString() : null,
+        },
+        { onConflict: 'user_id' }
+      );
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Failed to update Hive access', description: error.message });
+    } else {
+      toast({
+        title: !currentEnabled ? 'Hive access granted' : 'Hive access revoked',
+        description: !currentEnabled
+          ? 'User can now use the Hive extension.'
+          : 'User no longer has Hive extension access.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['hive_access_all'] });
+    }
+
+    setHiveToggleLoading(null);
+  };
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
@@ -301,6 +338,8 @@ const UserManagement = () => {
         return 'Owner';
       case 'moderator':
         return 'Moderator';
+      case 'manager':
+        return 'Manager';
       case 'member':
       default:
         return 'Member';
@@ -515,9 +554,14 @@ const UserManagement = () => {
                   <Table className="border-collapse">
                     <TableHeader className="sticky top-0 z-20" style={{ background: '#FAF9F5' }}>
                       <TableRow className="border-b h-11" style={{ borderColor: '#E3DAC9' }}>
-                        {['Identity', 'Email', 'Authorization', 'Deployment', 'Operations'].map((h, i, arr) => (
+                        {['Identity', 'Email', 'Authorization', 'Deployment', 'Hive', 'Operations'].map((h, i, arr) => (
                           <TableHead key={h} className="font-bold uppercase tracking-[0.15em] text-[10px] px-6" style={{ color: '#8C7654', borderRight: i < arr.length - 1 ? '1px solid #E3DAC9' : 'none', textAlign: i === arr.length - 1 ? 'right' : 'left' }}>
-                            {h}
+                            {h === 'Hive' ? (
+                              <span className="flex items-center gap-1.5">
+                                <Hexagon className="w-3 h-3" />
+                                Hive
+                              </span>
+                            ) : h}
                           </TableHead>
                         ))}
                       </TableRow>
@@ -529,8 +573,8 @@ const UserManagement = () => {
                           <TableRow key={mappedUser.id} className="border-b transition-colors hover:bg-[#FAF9F5]" style={{ borderColor: '#F0EAE0' }}>
                             <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm uppercase shadow-sm" style={{ background: 'rgba(197,168,128,0.12)', color: '#8C7654', border: '1px solid #E3DAC9' }}>
-                                  {mappedUser.full_name?.[0] || 'U'}
+                                <div className="w-9 h-9 min-w-9 shrink-0 rounded-full flex items-center justify-center font-bold text-sm uppercase shadow-sm" style={{ background: 'rgba(197,168,128,0.12)', color: '#8C7654', border: '1px solid #E3DAC9' }}>
+                                  {mappedUser.full_name?.[0]?.toUpperCase() || 'U'}
                                 </div>
                                 <span className="font-semibold text-sm" style={{ color: '#2C241B' }}>{mappedUser.full_name || 'Anonymous'}</span>
                               </div>
@@ -552,6 +596,32 @@ const UserManagement = () => {
                               <span className="text-[10px] font-medium" style={{ color: '#A59582' }}>
                                 {format(new Date(mappedUser.created_at), 'MMM do, yyyy')}
                               </span>
+                            </TableCell>
+                            {/* Hive Access Toggle — owner only */}
+                            <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
+                              <div className="flex items-center gap-2.5">
+                                {hiveToggleLoading === mappedUser.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#C5A880' }} />
+                                ) : (
+                                  <Switch
+                                    checked={hiveAccessMap[mappedUser.id] ?? false}
+                                    onCheckedChange={() =>
+                                      handleHiveToggle(mappedUser.id, hiveAccessMap[mappedUser.id] ?? false)
+                                    }
+                                    disabled={userRole !== 'owner'}
+                                    className={cn(
+                                      "data-[state=checked]:bg-emerald-500",
+                                      userRole !== 'owner' && "opacity-40 cursor-not-allowed"
+                                    )}
+                                  />
+                                )}
+                                <span className={cn(
+                                  "text-[10px] font-bold uppercase tracking-wider",
+                                  hiveAccessMap[mappedUser.id] ? "text-emerald-600" : "text-muted-foreground/40"
+                                )}>
+                                  {hiveAccessMap[mappedUser.id] ? 'On' : 'Off'}
+                                </span>
+                              </div>
                             </TableCell>
                             <TableCell className="px-6 h-16 text-right">
                               <div className="flex justify-end items-center gap-2">
