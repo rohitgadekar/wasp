@@ -22,6 +22,8 @@ import { Plus, Copy, Share2, Edit, Trash2, Search, Loader2, CircleUser, Diff, Co
 import { useToast } from '@/hooks/use-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { GiFire } from "react-icons/gi";
+
 import {
   Pagination,
   PaginationContent,
@@ -358,6 +360,24 @@ const CodeLibrary = () => {
     enabled: !!user,
   });
 
+  // Fetch all unique contributors (not limited by pagination)
+  const { data: contributorsData = [] } = useQuery({
+    queryKey: ['code_contributors'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('code_snippets')
+        .select('author_id, profiles(full_name, email)');
+      if (error) throw error;
+      
+      // Get unique contributors
+      const uniqueContributors = Array.from(
+        new Map(data.map((item: any) => [item.author_id, item])).values()
+      );
+      return uniqueContributors;
+    },
+    enabled: !searchQuery && selectedAuthor === 'all',
+  });
+
   useEffect(() => {
     if (!user) return;
     const channel = supabase.channel('code_snippets_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'code_snippets' }, () => queryClient.invalidateQueries({ queryKey: ['code_snippets'] })).subscribe();
@@ -501,41 +521,108 @@ const CodeLibrary = () => {
             </div>
           ) : !searchQuery && selectedAuthor === 'all' ? (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {/* Library Statistics */}
               <div className="flex items-center gap-4 px-2">
-                <p className="text-sm font-sans font-bold uppercase tracking-widest text-[#8C7654] mt-1">Quick glance</p>
+                <p className="text-sm font-sans font-bold uppercase tracking-widest text-[#8C7654] mt-1">Library Overview</p>
                 <div className="h-px flex-1 bg-gradient-to-r from-[#E5DCCB] to-transparent" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                {snippets.slice(0, 6).map((snippet) => (
-                  <Card key={snippet.id} className="bg-[#FDFDFB] rounded-[1.5rem] border-[#E5DCCB] hover:border-[#C5A880]/50 transition-all duration-500 hover:shadow-xl hover:shadow-[#C5A880]/10 group flex flex-col overflow-hidden">
-                    <CardHeader className="p-5 pb-2">
-                      <div className="flex items-center justify-between gap-4 mb-2">
-                        <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none px-2.5 py-0.5 rounded-full text-[8px] font-sans font-bold tracking-[0.2em] uppercase">{snippet.language}</Badge>
-                        <span className="text-[9px] font-sans font-bold text-[#A59582] uppercase tracking-[0.15em]">{format(snippet.created_at, 'MMM d')}</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Total Snippets */}
+                <Card className="bg-gradient-to-br from-[#2C241B] to-[#3D3125] rounded-2xl border-0 overflow-hidden group hover:shadow-xl transition-all duration-300">
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#C5A880]/20 flex items-center justify-center">
+                        <Code2 className="w-5 h-5 text-[#C5A880]" />
                       </div>
-                      <CardTitle className="text-lg font-sans font-semibold tracking-wide text-[#2C241B] group-hover:text-[#94764D] transition-colors line-clamp-1">{snippet.title}</CardTitle>
-                      {snippet.description && <CardDescription className="text-xs font-sans text-[#7A6E5D] mt-1 line-clamp-2">{snippet.description}</CardDescription>}
-                    </CardHeader>
-                    <CardContent className="p-5 pt-2 flex-1 flex flex-col justify-end">
-                      {snippet.tags && snippet.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {snippet.tags.slice(0, 3).map((tag) => <span key={tag} className="text-[8px] font-sans font-bold px-2 py-0.5 rounded-md bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] uppercase tracking-wider">#{tag}</span>)}
-                        </div>
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#C5A880]/70">Total Snippets</span>
+                    </div>
+                    <div className="text-4xl font-sans font-bold text-[#EFEAE2]">{totalCount}</div>
+                  </div>
+                </Card>
+
+                {/* Languages */}
+                <Card className="bg-[#FDFDFB] rounded-2xl border border-[#E5DCCB] overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/50 transition-all duration-300">
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#C5A880]/10 flex items-center justify-center">
+                        <Cpu className="w-5 h-5 text-[#8C7654]" />
+                      </div>
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#A59582]">Languages</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Array.from(new Set(snippets.map(s => s.language))).slice(0, 3).map(lang => (
+                        <Badge key={lang} className="bg-[#C5A880]/15 text-[#8C7654] border-none px-2.5 py-0.5 rounded-full text-[9px] font-sans font-bold tracking-wider uppercase">
+                          {lang}
+                        </Badge>
+                      ))}
+                      {Array.from(new Set(snippets.map(s => s.language))).length > 3 && (
+                        <span className="text-[10px] font-sans text-[#A59582]">+{Array.from(new Set(snippets.map(s => s.language))).length - 3}</span>
                       )}
-                      <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#E5DCCB]/40">
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full bg-gradient-to-br from-[#E2D4BF] to-[#997C53] flex items-center justify-center shadow-sm overflow-hidden p-[1px]">
-                            <div className="w-full h-full bg-[#FDFDFB] rounded-full overflow-hidden flex items-center justify-center">
-                              {snippet.profiles?.avatar ? <img src={snippet.profiles.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <CircleUser className="h-3.5 w-3.5 text-[#C5A880]" />}
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-sans font-bold text-[#2C241B] truncate max-w-[90px]">{snippet.profiles?.full_name || snippet.profiles?.email?.split('@')[0] || 'Unknown'}</span>
-                        </div>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full text-[#A59582] hover:bg-[#C5A880]/15 hover:text-[#2C241B] transition-all" onClick={(e) => { e.stopPropagation(); handleCopy(snippet.code); }}><Copy className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Contributors */}
+                <Card className="bg-[#FDFDFB] rounded-2xl border border-[#E5DCCB] overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/50 transition-all duration-300">
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#C5A880]/10 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-[#8C7654]" />
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#A59582]">Contributors</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {contributorsData.slice(0, 4).map((contributor: any) => {
+                        const name = contributor?.profiles?.full_name || contributor?.profiles?.email?.split('@')[0] || 'Unknown';
+                        return (
+                          <Badge
+                            key={contributor.author_id}
+                            className="bg-[#C5A880]/15 text-[#8C7654] border-none px-2.5 py-0.5 rounded-full text-[9px] font-sans font-bold tracking-wider"
+                          >
+                            {name}
+                          </Badge>
+                        );
+                      })}
+                      {contributorsData.length > 4 && (
+                        <Badge className="bg-[#FAF9F5] text-[#A59582] border border-[#E5DCCB] px-2.5 py-0.5 rounded-full text-[9px] font-sans font-bold tracking-wider">
+                          +{contributorsData.length - 4} more
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Quick Actions */}
+                <Card className="bg-gradient-to-br from-[#C5A880]/10 to-[#A8896A]/10 rounded-2xl border border-[#C5A880]/30 overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/60 transition-all duration-300">
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#C5A880]/20 flex items-center justify-center">
+                        <GiFire className="w-5 h-5 text-[#8C7654]" />
+                      </div>
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#A59582]">Quick Actions</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 rounded-lg bg-white/50 text-[#8C7654] hover:bg-white hover:text-[#2C241B] text-[10px] font-sans font-bold uppercase tracking-wider"
+                        onClick={() => setIsAddDialogOpen(true)}
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1.5" />
+                        New
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 rounded-lg bg-white/50 text-[#8C7654] hover:bg-white hover:text-[#2C241B] text-[10px] font-sans font-bold uppercase tracking-wider"
+                        onClick={() => document.querySelector('input')?.focus()}
+                      >
+                        <Search className="w-3.5 h-3.5 mr-1.5" />
+                        Search
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
               </div>
             </div>
           ) : snippets.length === 0 ? (

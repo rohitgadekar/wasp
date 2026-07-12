@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { Code2, TrendingUp, Users, FileText, BookOpen, ChevronDown, Calendar, Trophy, MapPin, User, FolderPen, LogOut, Terminal, Table2, GitCompare, Wrench, FileCode2, Search, Sparkles, Puzzle } from 'lucide-react';
 import { NavLink } from './NavLink';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useHiveAccess } from '@/hooks/useHiveAccess';
 import { OnlineUsers } from './OnlineUsers';
 import { QuickLinks } from './QuickLinks';
 import { NyraFloatingButton } from './NyraFloatingButton';
@@ -32,17 +33,16 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const { user, signOut } = useAuth();
   const { isSuperUser, role } = useUserRole();
+  const { hasAccess: hasHiveAccess } = useHiveAccess();
   const navigate = useNavigate();
   const location = useLocation();
   const [showBanner, setShowBanner] = useState(false);
 
   const toolsItems = [
-    // { to: '/formatter', icon: FileCode2, label: 'Formatter', description: 'Code formatting utility' },
     { to: '/csv-visualizer', icon: Table2, label: 'CSV Visualizer', description: 'Data table inspection' },
-    // { to: '/diff-checker', icon: GitCompare, label: 'Diff Checker', description: 'Compare code changes' },
     { to: '/map-generator', icon: FolderPen, label: 'Map Name Generator', description: 'Generate Jira maps' },
     { to: '/document-finder', icon: Search, label: 'Document Finder', description: 'Search knowledge base' },
-    { to: '/hive', icon: Puzzle, label: 'Hive', description: 'Chrome extension setup' },
+    ...(hasHiveAccess ? [{ to: '/hive', icon: Puzzle, label: 'Hive', description: 'Chrome extension setup' }] : []),
   ];
 
   const isToolsActive = toolsItems.some(item => location.pathname === item.to);
