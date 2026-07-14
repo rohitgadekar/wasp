@@ -115,7 +115,7 @@ const UserManagement = () => {
     enabled: !!userRole && (userRole === 'moderator' || userRole === 'owner'),
   });
 
-  // Fetch hive access map for all users
+  // Fetch hive access map for all users (all authenticated users can read via RLS)
   const { data: hiveAccessMap = {} } = useQuery<HiveAccessMap>({
     queryKey: ['hive_access_all'],
     queryFn: async () => {
@@ -125,7 +125,7 @@ const UserManagement = () => {
       if (error) throw error;
       return Object.fromEntries((data ?? []).map(r => [r.user_id, r.enabled]));
     },
-    enabled: userRole === 'owner',
+    enabled: !!userRole && (userRole === 'moderator' || userRole === 'owner' || userRole === 'manager'),
   });
 
   const [hiveToggleLoading, setHiveToggleLoading] = useState<string | null>(null);
