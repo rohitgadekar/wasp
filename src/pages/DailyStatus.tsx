@@ -904,6 +904,8 @@ const DailyStatus = () => {
                         })}
                     </div>
 
+
+                    
                     
 
                     {/* Calendar + Chart Grid */}
@@ -1015,7 +1017,7 @@ const DailyStatus = () => {
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: data.fill }} />
                                                                     <span className="font-sans font-bold text-xs uppercase tracking-widest text-[#8C7654]">{data.name} : </span>
-                                                                    <span className="font-cinzel font-semibold text-lg" style={{ color: data.fill }}>{data.value}</span>
+                                                                    <span className="font-sans font-semibold text-lg" style={{ color: data.fill }}>{data.value}</span>
                                                                 </div>
                                                             </div>
                                                         );
@@ -1143,6 +1145,7 @@ const DailyStatus = () => {
                             </CardContent>
                         </Card>
                     </div>
+                    
 
                     {/* New Individual Charts Section */}
                     {dayStats.total > 0 && (
@@ -1280,7 +1283,7 @@ const DailyStatus = () => {
                                                 </div>
                                                 <div className="flex flex-wrap justify-center gap-6 mt-6">
                                                     {distributionData.map((item, i) => (
-                                                        <div key={i} className="flex flex-col items-center px-8 py-4 rounded-[2rem] min-w-[140px] bg-[#FAF9F5] border border-[#E5DCCB]/60">
+                                                        <div key={i} className="flex flex-col items-center px-8 py-4 rounded-[2rem] min-w-[140px] ">
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                                                                 <span className="text-xs font-sans font-bold uppercase tracking-wider" style={{ color: item.color }}>{item.name}</span>
@@ -1342,10 +1345,10 @@ const DailyStatus = () => {
                                                 </div>
                                                 <div className="flex flex-wrap justify-center gap-3 mt-8 max-w-2xl mx-auto">
                                                     {memberContributionData.map((item, i) => (
-                                                        <div key={i} className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E5DCCB]/60 bg-[#FAF9F5]">
+                                                        <div key={i} className="flex items-center gap-1.5 px-4 py-2 rounded-full">
                                                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                                                             <span className="text-[10px] font-sans font-bold uppercase tracking-wider" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{item.name}</span>
-                                                            <span className="text-xs font-sans font-semibold ml-1" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{Math.round((item.value / dayStats.total) * 100)}%</span>
+                                                            <span className="text-xs font-sans font-semibold" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{Math.round((item.value / dayStats.total) * 100)}%</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1626,8 +1629,14 @@ const DailyStatus = () => {
 
 
                     {/* Upcoming Schedule Overview */}
-                    <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden">
-                        <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between gap-4">
+                    <Card className="relative bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden">
+                        <div
+                            className="pointer-events-none absolute right-24 top-1/2 -translate-y-1/2 select-none"
+                            aria-hidden
+                        >
+                            <SiChinaeasternairlines className="h-56 w-56 text-[#C5A880] opacity-[0.09]" />
+                        </div>
+                        <CardHeader className="relative z-10 p-8 pb-4 flex flex-row items-center justify-between gap-4">
                             <div className="space-y-1">
                                 <CardTitle className="text-2xl font-bold text-[#2C241B]">Upcoming Schedule</CardTitle>
                                 <p className="text-sm font-inter text-[#8C7654]">
@@ -1642,7 +1651,7 @@ const DailyStatus = () => {
                                 </Badge>
                             )}
                         </CardHeader>
-                        <CardContent className="p-8 pt-4">
+                        <CardContent className="relative z-10 p-8 pt-4">
                             {(loadingUpcomingLeaves || loadingUpcomingHolidays) ? (
                                 <div className="space-y-6">
                                     {[0, 1, 2].map((row) => (
@@ -1660,7 +1669,7 @@ const DailyStatus = () => {
                                 <div className="relative py-1">
                                     {scheduleTimeline.length > 1 && (
                                         <div
-                                            className="absolute left-6 top-7 bottom-7 w-0.5 -translate-x-1/2 bg-[#D4C4A8]"
+                                            className="absolute left-6 top-7 bottom-7 w-0.5 -translate-x-1/2 bg-[#D4C4A8]/40"
                                             aria-hidden
                                         />
                                     )}
@@ -1672,7 +1681,7 @@ const DailyStatus = () => {
                                             return (
                                                 <div key={group.date} className="relative flex gap-4">
                                                     <div className="relative z-10 flex w-12 flex-shrink-0 flex-col items-center">
-                                                        <div className="flex h-14 w-12 flex-col items-center justify-center rounded-2xl border border-[#E5DCCB] bg-[#FAF9F5] shadow-sm">
+                                                        <div className="flex h-14 w-12 flex-col items-center justify-center rounded-2xl border border-[#E5DCCB]/40 bg-[#FAF9F5] shadow-sm">
                                                             <span className="text-[8px] font-sans font-bold uppercase tracking-wider text-[#C5A880]">
                                                                 {formatScheduleDay(group.date)}
                                                             </span>
@@ -1696,7 +1705,7 @@ const DailyStatus = () => {
                                                                 return (
                                                                     <div
                                                                         key={event.id}
-                                                                        className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/60 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
+                                                                        className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
                                                                     >
                                                                         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#C5A880]/15 text-[#8C7654]">
                                                                             <TrendingUp className="h-3.5 w-3.5" />
@@ -1714,16 +1723,14 @@ const DailyStatus = () => {
                                                             return (
                                                                 <div
                                                                     key={event.id}
-                                                                    className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/60 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
+                                                                    className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
                                                                 >
-                                                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#C5A880] to-[#A8896A] text-xs font-bold text-[#2C241B]">
-                                                                        {event.leave.profiles?.full_name?.[0] || 'U'}
-                                                                    </div>
+                                                                    
                                                                     <p className="truncate font-inter text-sm font-semibold text-[#2C241B]">
                                                                         {event.leave.profiles?.full_name || 'Team member'}
                                                                     </p>
                                                                     <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
-                                                                        <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-2.5 py-0.5 text-[7px] font-sans font-bold uppercase tracking-widest">
+                                                                        <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
                                                                             {event.leave.type || 'Leave'}
                                                                         </Badge>
                                                                         {event.isActive && (

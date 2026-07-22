@@ -59,7 +59,9 @@ const App = () => (
             <Route path="/s/:id" element={<SnippetViewer />} />
             <Route path="/script/:id" element={<ScriptViewer />} />
             <Route path="/w/:id" element={<WikiPageViewer />} />
-            <Route path="/p/status" element={<StatusViewer />} />
+            <Route path="/p/status" element={<ProtectedRoute>
+                  <StatusViewer />
+              </ProtectedRoute>} />
             
             <Route path="/csv-visualizer" element={
               <ProtectedRoute>

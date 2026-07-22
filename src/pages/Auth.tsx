@@ -81,11 +81,11 @@ const Auth = () => {
           {/* Secure Handshake & Monitor Metrics */}
           <div className="hidden md:flex flex-col gap-4 pt-10 border-t border-[#E5DCCB]/60 w-full">
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-white/40 border border-[#EBE4D8] space-y-1.5 shadow-sm transition-all duration-300 hover:bg-white/60">
+              <div className="p-4 rounded-xl bg-white/40   space-y-1.5 shadow-sm transition-all duration-300 hover:bg-white/60">
                 <p className="text-[#8C7654] font-semibold font-sans text-[10px] tracking-wider uppercase">ENCRYPTED</p>
                 <p className="text-[10px] text-[#7A6E5D] leading-relaxed font-sans">Post-quantum secure handshake protocols active.</p>
               </div>
-              <div className="p-4 rounded-xl bg-white/40 border border-[#EBE4D8] space-y-1.5 shadow-sm transition-all duration-300 hover:bg-white/60">
+              <div className="p-4 rounded-xl bg-white/40  space-y-1.5 shadow-sm transition-all duration-300 hover:bg-white/60">
                 <p className="text-[#8C7654] font-semibold font-sans text-[10px] tracking-wider uppercase">MONITORED</p>
                 <p className="text-[10px] text-[#7A6E5D] leading-relaxed font-sans">Real-time contribution logging and verification.</p>
               </div>
@@ -104,8 +104,8 @@ const Auth = () => {
 
         {/* Right Column: Authentication Card with Double Frame */}
         <div className="w-full">
-          <div className="p-3 bg-[#FAF8F5] border border-[#E5DCCB] rounded-[2.5rem] shadow-[0_30px_90px_rgba(197,168,128,0.18)]">
-            <div className="bg-[#FDFDFB] border border-[#EAE2D5] rounded-[2rem] overflow-hidden">
+          <div className="p-3 bg-[#FAF8F5]  rounded-[2.5rem] shadow-[0_30px_90px_rgba(197,168,128,0.18)]">
+            <div className="bg-[#FDFDFB]  rounded-[2rem] overflow-hidden">
               <CardHeader className="p-8">
                 <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2.5">
                   <CardTitle className="text-2xl font-heading uppercase font-semibold tracking-[0.05em] text-[#2C241B]">
