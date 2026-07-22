@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useTitle } from '@/hooks/use-title';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, parseISO, isValid, differenceInCalendarDays } from 'date-fns';
+import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, parseISO, isValid, differenceInCalendarDays, isAfter, isBefore, startOfDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, UserPlus, Trash2, Pencil, Loader2, Plane, Palmtree, Clock, Info, TrendingUp, ChevronDown, Check } from 'lucide-react';
 import {
     Dialog,
@@ -205,6 +205,27 @@ const Leaves = () => {
             return;
         }
 
+        const startDate = startOfDay(newLeave.startDate);
+        const endDate = startOfDay(newLeave.endDate);
+
+        if (!isValid(startDate) || !isValid(endDate)) {
+            toast({
+                title: "Invalid dates",
+                description: "Please select valid start and end dates.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        if (isAfter(startDate, endDate)) {
+            toast({
+                title: "Invalid date range",
+                description: "Start date cannot be after end date.",
+                variant: "destructive"
+            });
+            return;
+        }
+
         setActionLoading(true);
 
         let oldLeave = null;
@@ -219,8 +240,8 @@ const Leaves = () => {
 
         const leaveData = {
             user_id: newLeave.userId,
-            start_date: format(newLeave.startDate, 'yyyy-MM-dd'),
-            end_date: format(newLeave.endDate, 'yyyy-MM-dd'),
+            start_date: format(startDate, 'yyyy-MM-dd'),
+            end_date: format(endDate, 'yyyy-MM-dd'),
             type: newLeave.type,
             assigned_by: user?.id
         };
@@ -243,8 +264,8 @@ const Leaves = () => {
             }
 
             const leaveDates = eachDayOfInterval({
-                start: newLeave.startDate,
-                end: newLeave.endDate
+                start: startDate,
+                end: endDate
             });
 
             const statusEntries = leaveDates.map(date => ({
@@ -822,7 +843,16 @@ const Leaves = () => {
                                         <Calendar
                                             mode="single"
                                             selected={newLeave.startDate}
-                                            onSelect={(date) => date && setNewLeave({ ...newLeave, startDate: date })}
+                                            onSelect={(date) => {
+                                                if (!date) return;
+                                                setNewLeave((prev) => ({
+                                                    ...prev,
+                                                    startDate: date,
+                                                    endDate: prev.endDate && isBefore(startOfDay(prev.endDate), startOfDay(date))
+                                                        ? date
+                                                        : prev.endDate
+                                                }));
+                                            }}
                                             initialFocus
                                         />
                                     </PopoverContent>
@@ -849,7 +879,12 @@ const Leaves = () => {
                                         <Calendar
                                             mode="single"
                                             selected={newLeave.endDate}
-                                            onSelect={(date) => date && setNewLeave({ ...newLeave, endDate: date })}
+                                            onSelect={(date) => date && setNewLeave((prev) => ({ ...prev, endDate: date }))}
+                                            disabled={(date) =>
+                                                newLeave.startDate
+                                                    ? isBefore(startOfDay(date), startOfDay(newLeave.startDate))
+                                                    : false
+                                            }
                                             initialFocus
                                         />
                                     </PopoverContent>

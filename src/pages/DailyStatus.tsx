@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarWithDots } from '@/components/ui/custom-calendar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar } from 'recharts';
-import { Download, FileSpreadsheet, Image, Share2, Plus, Trash2, Mail, Palmtree, TrendingUp } from 'lucide-react';
+import { Download, FileSpreadsheet, Image, Share2, Plus, Trash2, Mail, TrendingUp } from 'lucide-react';
 import { SiChinaeasternairlines } from "react-icons/si";
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +32,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Loader2 } from 'lucide-react';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, addDays, isSameDay, startOfDay, isBefore, isAfter, eachDayOfInterval } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -56,6 +56,45 @@ interface DayStats {
     new_dev: number;
     updates: number;
 }
+
+interface Leave {
+    id: string;
+    user_id: string;
+    start_date: string;
+    end_date: string;
+    type: string;
+    profiles?: { full_name: string };
+}
+
+interface UpcomingHoliday {
+    date: string;
+    description: string;
+}
+
+const UPCOMING_HORIZON_DAYS = 30;
+
+const formatScheduleDay = (dateStr: string) => format(parseISO(dateStr), 'EEE');
+
+const formatScheduleDayNumber = (dateStr: string) => format(parseISO(dateStr), 'd');
+
+const formatScheduleMonth = (dateStr: string) => format(parseISO(dateStr), 'MMM');
+
+type ScheduleTimelineEvent =
+    | { kind: 'holiday'; id: string; description: string }
+    | { kind: 'leave'; id: string; leave: Leave; isActive: boolean };
+
+interface ScheduleTimelineGroup {
+    date: string;
+    events: ScheduleTimelineEvent[];
+}
+
+const getRelativeScheduleLabel = (dateStr: string) => {
+    const date = startOfDay(parseISO(dateStr));
+    const today = startOfDay(new Date());
+    if (isSameDay(date, today)) return 'Today';
+    if (isSameDay(date, addDays(today, 1))) return 'Tomorrow';
+    return null;
+};
 
 const isValidCase = (link: string) => {
     const val = link.trim().toLowerCase();
@@ -110,6 +149,8 @@ const DailyStatus = () => {
     }, [user, selectedUserId]);
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const upcomingHorizonStr = format(addDays(new Date(), UPCOMING_HORIZON_DAYS), 'yyyy-MM-dd');
 
     const EXCLUDED_EMAILS = useMemo(() => [
         'rohit@apex.com',
@@ -183,6 +224,115 @@ const DailyStatus = () => {
         );
         return taskStatuses.filter(status => !excludedIds.has(status.user_id));
     }, [taskStatuses, allProfiles, EXCLUDED_EMAILS]);
+
+    // Fetch leaves for selected date
+    const { data: leavesForDate = [] } = useQuery({
+        queryKey: ['team_leaves', dateStr],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('team_leaves')
+                .select('id, user_id, start_date, end_date, type')
+                .lte('start_date', dateStr)
+                .gte('end_date', dateStr);
+
+            if (error) throw error;
+            return data as Leave[];
+        },
+    });
+
+    // Fetch upcoming leaves and holidays for quick overview
+    const { data: upcomingLeaves = [], isLoading: loadingUpcomingLeaves } = useQuery({
+        queryKey: ['team_leaves_upcoming', todayStr],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('team_leaves')
+                .select('id, user_id, start_date, end_date, type, profiles(full_name)')
+                .gte('end_date', todayStr)
+                .lte('start_date', upcomingHorizonStr)
+                .order('start_date', { ascending: true });
+
+            if (error) throw error;
+            return data as Leave[];
+        },
+    });
+
+    const { data: upcomingHolidays = [], isLoading: loadingUpcomingHolidays } = useQuery({
+        queryKey: ['holidays_upcoming', todayStr],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('holidays' as any)
+                .select('date, description')
+                .gte('date', todayStr)
+                .lte('date', upcomingHorizonStr)
+                .order('date', { ascending: true });
+
+            if (error) throw error;
+            return (data || []) as unknown as UpcomingHoliday[];
+        },
+    });
+
+    const filteredUpcomingLeaves = useMemo(() => {
+        const excludedIds = new Set(
+            allProfiles
+                .filter(p => EXCLUDED_EMAILS.includes(p.email?.toLowerCase() || ''))
+                .map(p => p.id)
+        );
+        return upcomingLeaves.filter(leave => !excludedIds.has(leave.user_id));
+    }, [upcomingLeaves, allProfiles, EXCLUDED_EMAILS]);
+
+    const hasUpcomingSchedule = filteredUpcomingLeaves.length > 0 || upcomingHolidays.length > 0;
+
+    const scheduleTimeline = useMemo((): ScheduleTimelineGroup[] => {
+        const groups = new Map<string, ScheduleTimelineEvent[]>();
+        const today = startOfDay(new Date());
+        const horizonEnd = startOfDay(parseISO(upcomingHorizonStr));
+
+        const addEvent = (date: string, event: ScheduleTimelineEvent) => {
+            if (!groups.has(date)) groups.set(date, []);
+            groups.get(date)!.push(event);
+        };
+
+        upcomingHolidays.forEach((holiday) => {
+            addEvent(holiday.date, {
+                kind: 'holiday',
+                id: `holiday-${holiday.date}`,
+                description: holiday.description,
+            });
+        });
+
+        filteredUpcomingLeaves.forEach((leave) => {
+            const leaveStart = startOfDay(parseISO(leave.start_date));
+            const leaveEnd = startOfDay(parseISO(leave.end_date));
+            const isActive = !isBefore(today, leaveStart) && !isAfter(today, leaveEnd);
+
+            const effectiveStart = isBefore(leaveStart, today) ? today : leaveStart;
+            const effectiveEnd = isAfter(leaveEnd, horizonEnd) ? horizonEnd : leaveEnd;
+
+            if (isAfter(effectiveStart, effectiveEnd)) return;
+
+            eachDayOfInterval({ start: effectiveStart, end: effectiveEnd }).forEach((day) => {
+                const dateKey = format(day, 'yyyy-MM-dd');
+                addEvent(dateKey, {
+                    kind: 'leave',
+                    id: `${leave.id}-${dateKey}`,
+                    leave,
+                    isActive,
+                });
+            });
+        });
+
+        return Array.from(groups.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([date, events]) => ({ date, events }));
+    }, [upcomingHolidays, filteredUpcomingLeaves, upcomingHorizonStr]);
+
+    const leaveTypeByUserId = useMemo(() => {
+        const map: Record<string, string> = {};
+        leavesForDate.forEach(leave => {
+            map[leave.user_id] = leave.type;
+        });
+        return map;
+    }, [leavesForDate]);
 
     // Fetch holidays
     const { data: holidays = {} } = useQuery({
@@ -753,6 +903,8 @@ const DailyStatus = () => {
                             );
                         })}
                     </div>
+
+                    
 
                     {/* Calendar + Chart Grid */}
                     <div className="grid gap-8 lg:grid-cols-2">
@@ -1351,7 +1503,7 @@ const DailyStatus = () => {
                                                                     {status.profiles?.full_name || 'Anonymous User'}
                                                                 </span>
                                                                 <span className="text-[9px] font-sans font-bold text-[#A59582] uppercase tracking-widest">
-                                                                    ID: {status.user_id.split("-")[0]}
+                                                                    X{status.user_id.split("-")[0]}
                                                                 </span>
                                                                 {status.user_id === user?.id && (
                                                                     <Badge className="w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-2 py-0.5 text-[8px] font-sans font-bold uppercase tracking-wider">
@@ -1437,43 +1589,161 @@ const DailyStatus = () => {
                         <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden shadow-2xl">
                             <CardHeader className="p-10 pb-4 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
-                                    <CardTitle className="text-2xl font-cinzel font-semibold tracking-wide text-[#2C241B]">Personnel Absence Protocol</CardTitle>
-                                    <p className="text-sm font-serif italic text-[#8C7654]">Team members currently on scheduled leave</p>
+                                    <CardTitle className="text-2xl font-inter font-bold text-[#2C241B]">Personnel Absence Protocol</CardTitle>
+                                    <p className="text-sm font-inter  text-[#8C7654]">Team members currently on scheduled leave</p>
                                 </div>
                                 <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest">
                                     {separatedStatuses.onLeave.length} PERSONNEL
                                 </Badge>
                             </CardHeader>
                             <CardContent className="p-10 pt-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="flex flex-wrap gap-6">
                                     {separatedStatuses.onLeave.map((status) => (
                                         <div
                                             key={status.id}
-                                            className="group relative bg-[#FAF9F5] rounded-3xl p-6 border border-[#E5DCCB]/60 hover:border-[#C5A880]/50 transition-all duration-300"
+                                            className="group relative bg-[#FAF9F5] rounded-3xl p-6 hover:bg-[#C5A880]/10  border border-[#E5DCCB]/20 transition-all duration-300"
                                         >
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex flex-col">
-                                                    <span className="font-sans font-bold text-[#2C241B] text-lg">
+                                            <div className="flex flex-col">
+                                                    <span className="font-inter font-semibold text-[#8C7654] text-lg">
                                                         {status.profiles?.full_name || 'Anonymous User'}
                                                     </span>
-                                                    <span className="text-[9px] font-sans font-bold text-[#A59582] uppercase tracking-widest mt-0.5">
-                                                        ID: {status.user_id.split("-")[0]}
-                                                    </span>
-                                                    <Badge className="w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-3 py-1 text-[9px] font-sans font-bold uppercase tracking-widest mt-2">
-                                                        ON LEAVE
+                                                    <div className="flex items-center gap-2">
+                                                    <Badge className="text-xs w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-md px-3 py-1 text-[8px] font-sans font-bold uppercase tracking-widest mt-2">
+                                                    X{status.user_id.split("-")[0]}
                                                     </Badge>
+                                                    <Badge className="text-xs w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-md px-3 py-1 text-[8px] font-sans font-bold uppercase tracking-widest mt-2">
+                                                    {leaveTypeByUserId[status.user_id] || 'Leave'}
+                                                    </Badge>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="text-xs font-serif italic text-[#8C7654] flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-[#C5A880]" />
-                                                Reported absence status
-                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             </CardContent>
                         </Card>
                     )}
+
+
+
+                    {/* Upcoming Schedule Overview */}
+                    <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden">
+                        <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between gap-4">
+                            <div className="space-y-1">
+                                <CardTitle className="text-2xl font-bold text-[#2C241B]">Upcoming Schedule</CardTitle>
+                                <p className="text-sm font-inter text-[#8C7654]">
+                                    Timeline for the next {UPCOMING_HORIZON_DAYS} days
+                                </p>
+                            </div>
+                            {(loadingUpcomingLeaves || loadingUpcomingHolidays) ? (
+                                <Skeleton className="h-7 w-24 rounded-full bg-[#E5DCCB]/20" />
+                            ) : (
+                                <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest">
+                                    {filteredUpcomingLeaves.length + upcomingHolidays.length} EVENTS
+                                </Badge>
+                            )}
+                        </CardHeader>
+                        <CardContent className="p-8 pt-4">
+                            {(loadingUpcomingLeaves || loadingUpcomingHolidays) ? (
+                                <div className="space-y-6">
+                                    {[0, 1, 2].map((row) => (
+                                        <div key={row} className="flex gap-4">
+                                            <Skeleton className="h-12 w-12 rounded-2xl bg-[#E5DCCB]/20 flex-shrink-0" />
+                                            <Skeleton className="h-10 w-48 rounded-2xl bg-[#E5DCCB]/20" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : !hasUpcomingSchedule ? (
+                                <div className="rounded-3xl border border-dashed border-[#E5DCCB] bg-[#FAF9F5] px-6 py-10 text-center">
+                                    <p className="text-sm font-inter text-[#8C7654]">No upcoming leaves or holidays in the next {UPCOMING_HORIZON_DAYS} days.</p>
+                                </div>
+                            ) : (
+                                <div className="relative py-1">
+                                    {scheduleTimeline.length > 1 && (
+                                        <div
+                                            className="absolute left-6 top-7 bottom-7 w-0.5 -translate-x-1/2 bg-[#D4C4A8]"
+                                            aria-hidden
+                                        />
+                                    )}
+
+                                    <div className="space-y-8">
+                                        {scheduleTimeline.map((group) => {
+                                            const relativeLabel = getRelativeScheduleLabel(group.date);
+
+                                            return (
+                                                <div key={group.date} className="relative flex gap-4">
+                                                    <div className="relative z-10 flex w-12 flex-shrink-0 flex-col items-center">
+                                                        <div className="flex h-14 w-12 flex-col items-center justify-center rounded-2xl border border-[#E5DCCB] bg-[#FAF9F5] shadow-sm">
+                                                            <span className="text-[8px] font-sans font-bold uppercase tracking-wider text-[#C5A880]">
+                                                                {formatScheduleDay(group.date)}
+                                                            </span>
+                                                            <span className="text-sm font-inter font-bold leading-none text-[#2C241B]">
+                                                                {formatScheduleDayNumber(group.date)}
+                                                            </span>
+                                                            <span className="mt-0.5 text-[8px] font-sans font-bold uppercase tracking-wider text-[#A59582]">
+                                                                {formatScheduleMonth(group.date)}
+                                                            </span>
+                                                        </div>
+                                                        {relativeLabel && (
+                                                            <Badge className="mt-1.5 bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-2 py-0.5 text-[7px] font-sans font-bold uppercase tracking-widest">
+                                                                {relativeLabel}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex flex-wrap items-start gap-2 pt-0.5">
+                                                        {group.events.map((event) => {
+                                                            if (event.kind === 'holiday') {
+                                                                return (
+                                                                    <div
+                                                                        key={event.id}
+                                                                        className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/60 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
+                                                                    >
+                                                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#C5A880]/15 text-[#8C7654]">
+                                                                            <TrendingUp className="h-3.5 w-3.5" />
+                                                                        </div>
+                                                                        <p className="font-inter text-sm font-semibold text-[#2C241B]">
+                                                                            {'Company Holiday'}
+                                                                        </p>
+                                                                        <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-2.5 py-0.5 text-[7px] font-sans font-bold uppercase tracking-widest">
+                                                                            PTO
+                                                                        </Badge>
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={event.id}
+                                                                    className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/60 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
+                                                                >
+                                                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#C5A880] to-[#A8896A] text-xs font-bold text-[#2C241B]">
+                                                                        {event.leave.profiles?.full_name?.[0] || 'U'}
+                                                                    </div>
+                                                                    <p className="truncate font-inter text-sm font-semibold text-[#2C241B]">
+                                                                        {event.leave.profiles?.full_name || 'Team member'}
+                                                                    </p>
+                                                                    <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
+                                                                        <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-2.5 py-0.5 text-[7px] font-sans font-bold uppercase tracking-widest">
+                                                                            {event.leave.type || 'Leave'}
+                                                                        </Badge>
+                                                                        {event.isActive && (
+                                                                            <span className="text-[7px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">
+                                                                                Active
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
 

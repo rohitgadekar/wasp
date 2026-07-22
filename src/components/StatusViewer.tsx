@@ -57,6 +57,14 @@ interface DayStats {
     updates: number;
 }
 
+interface Leave {
+    id: string;
+    user_id: string;
+    start_date: string;
+    end_date: string;
+    type: string;
+}
+
 
 const isValidCase = (link: string) => {
     const val = link.trim().toLowerCase();
@@ -188,6 +196,31 @@ const StatusViewer = () => {
         );
         return taskStatuses.filter(status => !excludedIds.has(status.user_id));
     }, [taskStatuses, allProfiles, EXCLUDED_EMAILS]);
+
+       // Fetch leaves for selected date
+       const { data: leavesForDate = [] } = useQuery({
+        queryKey: ['team_leaves', dateStr],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('team_leaves')
+                .select('id, user_id, start_date, end_date, type')
+                .lte('start_date', dateStr)
+                .gte('end_date', dateStr);
+
+            if (error) throw error;
+            return data as Leave[];
+        },
+    });
+
+    const leaveTypeByUserId = useMemo(() => {
+        const map: Record<string, string> = {};
+        leavesForDate.forEach(leave => {
+            map[leave.user_id] = leave.type;
+        });
+        return map;
+    }, [leavesForDate]);
+
+    
 
     // Fetch holidays for Viewer
     const { data: holidays = {} } = useQuery({
@@ -1128,7 +1161,7 @@ const StatusViewer = () => {
                                                                     {status.profiles?.full_name || 'Anonymous User'}
                                                                 </span>
                                                                 <span className="text-[9px] font-sans font-bold text-[#A59582] uppercase tracking-widest">
-                                                                    ID: {status.user_id.split("-")[0]}
+                                                                    X{status.user_id.split("-")[0]}
                                                                 </span>
                                                                 {status.user_id === user?.id && (
                                                                     <Badge className="w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-2 py-0.5 text-[8px] font-sans font-bold uppercase tracking-wider">
@@ -1203,37 +1236,33 @@ const StatusViewer = () => {
                         <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden shadow-2xl">
                             <CardHeader className="p-10 pb-4 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
-                                    <CardTitle className="text-2xl font-cinzel font-semibold tracking-wide text-[#2C241B]">Personnel Absence Protocol</CardTitle>
-                                    <p className="text-sm font-serif italic text-[#8C7654]">Team members currently on scheduled leave</p>
+                                    <CardTitle className="text-2xl font-inter font-bold text-[#2C241B]">Personnel Absence Protocol</CardTitle>
+                                    <p className="text-sm font-inter  text-[#8C7654]">Team members currently on scheduled leave</p>
                                 </div>
                                 <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest">
                                     {separatedStatuses.onLeave.length} PERSONNEL
                                 </Badge>
                             </CardHeader>
                             <CardContent className="p-10 pt-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="flex flex-wrap gap-6">
                                     {separatedStatuses.onLeave.map((status) => (
                                         <div
                                             key={status.id}
-                                            className="group relative bg-[#FAF9F5] rounded-3xl p-6 border border-[#E5DCCB]/60 hover:border-[#C5A880]/50 transition-all duration-300"
+                                            className="group relative bg-[#FAF9F5] rounded-3xl p-6 hover:bg-[#C5A880]/10  border border-[#E5DCCB]/20 transition-all duration-300"
                                         >
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex flex-col">
-                                                    <span className="font-sans font-bold text-[#2C241B] text-lg">
+                                            <div className="flex flex-col">
+                                                    <span className="font-inter font-semibold text-[#8C7654] text-lg">
                                                         {status.profiles?.full_name || 'Anonymous User'}
                                                     </span>
-                                                    <span className="text-[9px] font-sans font-bold text-[#A59582] uppercase tracking-widest mt-0.5">
-                                                        ID: {status.user_id.split("-")[0]}
-                                                    </span>
-                                                    <Badge className="w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-3 py-1 text-[9px] font-sans font-bold uppercase tracking-widest mt-2">
-                                                        ON LEAVE
+                                                    <div className="flex items-center gap-2">
+                                                    <Badge className="text-xs w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-md px-3 py-1 text-[8px] font-sans font-bold uppercase tracking-widest mt-2">
+                                                    X{status.user_id.split("-")[0]}
                                                     </Badge>
+                                                    <Badge className="text-xs w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-md px-3 py-1 text-[8px] font-sans font-bold uppercase tracking-widest mt-2">
+                                                    {leaveTypeByUserId[status.user_id] || 'Leave'}
+                                                    </Badge>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="text-xs font-serif italic text-[#8C7654] flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-[#C5A880]" />
-                                                Reported absence status
-                                            </div>
                                         </div>
                                     ))}
                                 </div>
