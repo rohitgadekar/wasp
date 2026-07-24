@@ -72,7 +72,6 @@ const SnippetViewer = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF9F5] gap-6">
         <Loader2 className="h-12 w-12 animate-spin text-[#C5A880]" />
-        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8C7654] animate-pulse">Synchronizing Asset</p>
       </div>
     );
   }
@@ -101,67 +100,41 @@ const SnippetViewer = () => {
         {/* Centered Editorial Header */}
         <div className="flex flex-col items-center text-center space-y-6">
           <Badge className="bg-[#C5A880]/10 text-[#8C7654] border border-[#E5DCCB] rounded-full px-6 py-1.5 uppercase tracking-[0.2em] text-[10px] font-sans font-bold shadow-sm">
-            Node Verified
+            Node Authenticated
           </Badge>
-          <div className="space-y-4">
+          <div className="space-y-4 flex flex-col items-center justify-center">
             <h1 className="text-5xl md:text-7xl font-normal tracking-tighter text-[#2C241B] leading-tight">
               {snippet.title}
+
             </h1>
+            <p className="text-md font-normal text-[#8C7654] leading-relaxed ">
+              {snippet.description}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2 bg-[#FAF9F5] px-4 py-2 rounded-xl border border-[#E3DAC9]">
+                {snippet.profiles?.avatar ? (
+                  <img src={snippet.profiles.avatar} alt="Avatar" className="h-5 w-5 rounded-full object-cover border" style={{ borderColor: '#E3DAC9' }} />
+                ) : (
+                  <CircleUser className="h-4 w-4 text-[#C5A880]" />
+                )}
+                <span className="text-[11px] font-bold uppercase tracking-tight text-[#2C241B]">
+                  {snippet.profiles?.full_name || 'Anonymous User'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-[#FAF9F5] px-4 py-2 rounded-xl border border-[#E3DAC9]">
+                <Calendar className="h-4 w-4 text-[#C5A880]" />
+                <span className="text-[11px] font-bold uppercase tracking-tight text-[#2C241B]">
+                  {format(snippet.created_at, 'MMMM do, yyyy')}
+                </span>
+              </div>
+
+            </div>
           </div>
         </div>
 
         <div className="flex flex-col gap-12">
-          {/* Information Bar Card */}
-          <Card className="border-0 overflow-hidden shadow-xl animate-in fade-in duration-500  transition-all duration-700" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
-            <CardHeader className="p-10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                <div className="flex items-center gap-6">
 
-                  <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-[#2C241B]">Snippet Description</h2>
-                    <p className="text-[10px] font-bold text-[#8C7654] uppercase tracking-widest mt-1">Verification Status: Authorized</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2 bg-[#FAF9F5] px-4 py-2 rounded-xl border border-[#E3DAC9]">
-                    {snippet.profiles?.avatar ? (
-                      <img src={snippet.profiles.avatar} alt="Avatar" className="h-5 w-5 rounded-full object-cover border" style={{ borderColor: '#E3DAC9' }} />
-                    ) : (
-                      <CircleUser className="h-4 w-4 text-[#C5A880]" />
-                    )}
-                    <span className="text-[11px] font-bold uppercase tracking-tight text-[#2C241B]">
-                      {snippet.profiles?.full_name || 'Anonymous User'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-[#FAF9F5] px-4 py-2 rounded-xl border border-[#E3DAC9]">
-                    <Calendar className="h-4 w-4 text-[#C5A880]" />
-                    <span className="text-[11px] font-bold uppercase tracking-tight text-[#2C241B]">
-                      {format(snippet.created_at, 'MMMM do, yyyy')}
-                    </span>
-                  </div>
-                  <Button
-                    onClick={handleCopy}
-                    variant="outline"
-                    className="rounded-xl px-8 h-9 font-bold text-xs uppercase tracking-[0.15em] hover:scale-105 active:scale-95 transition-all bg-[#FDFDFB] text-[#2C241B] hover:bg-[#FAF9F5] hover:text-[#2C241B]"
-                    style={{ borderColor: '#E3DAC9' }}
-                  >
-                    <Copy className="h-4 w-4 mr-2 opacity-70" />
-                    Copy Intel
-                  </Button>
-                </div>
-              </div>
-
-              {snippet.description && (
-                <div className="mt-8 p-6 rounded-2xl bg-[#FAF9F5] border" style={{ borderColor: '#E3DAC9' }}>
-                  <p className="text-sm font-bold text-[#8C7654] leading-relaxed italic">
-                    {snippet.description}
-                  </p>
-                </div>
-              )}
-
-            </CardHeader>
-          </Card>
 
           {/* Syntax Highlight Container */}
           <div className="relative group">
@@ -173,6 +146,17 @@ const SnippetViewer = () => {
                   <div className="w-3 h-3 rounded-full bg-emerald-500/30" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C7654]">Secure Code Viewer</span>
+                <a
+                  onClick={handleCopy}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex cursor-pointer items-center gap-2 text-[11px] font-sans font-bold text-[#8C7654] hover:text-[#2C241B] group/link transition-colors uppercase tracking-[0.15em]"
+                >
+                  <span className="relative">
+                    Copy Snippet
+                    <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-[#C5A880] group-hover/link:w-full transition-all duration-300" />
+                  </span>
+                </a>
               </div>
               <CardContent className="p-0">
                 <div className="syntax-highlighter-wrapper">
@@ -187,7 +171,7 @@ const SnippetViewer = () => {
                       padding: '1.5rem',
                       fontSize: '0.875rem',
                       background: 'transparent',
-                      maxHeight: '400px',
+                      // maxHeight: '400px',
                       overflowY: 'auto',
                       overflowX: 'hidden',
                     }}

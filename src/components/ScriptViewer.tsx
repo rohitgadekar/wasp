@@ -58,7 +58,6 @@ const ScriptViewer = () => {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF9F5] gap-6">
                 <Loader2 className="h-12 w-12 animate-spin text-[#C5A880]" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8C7654] animate-pulse">Initializing Script Node</p>
             </div>
         );
     }
@@ -87,7 +86,7 @@ const ScriptViewer = () => {
                 {/* Centered Editorial Header */}
                 <div className="flex flex-col items-center text-center space-y-6">
                     <Badge className="bg-[#C5A880]/10 text-[#8C7654] border border-[#E5DCCB] rounded-full px-6 py-1.5 uppercase tracking-[0.2em] text-[10px] font-sans font-bold shadow-sm">
-                        Node Verified
+                        Node Authenticated
                     </Badge>
                     <div className="space-y-4">
                         <h1 className="text-5xl md:text-7xl font-normal tracking-tighter text-[#2C241B] leading-tight">

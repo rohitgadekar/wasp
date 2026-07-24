@@ -64,7 +64,6 @@ const WikiPageViewer = () => {
                     <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
                     <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground animate-pulse">Initializing Knowledge Node</p>
             </div>
         );
     }
@@ -95,7 +94,7 @@ const WikiPageViewer = () => {
                 {/* Centered Editorial Header */}
                 <div className="flex flex-col items-center text-center space-y-6">
                     <Badge className="bg-[#C5A880]/10 text-[#8C7654] border border-[#E5DCCB] rounded-full px-6 py-1.5 uppercase tracking-[0.2em] text-[10px] font-sans font-bold shadow-sm">
-                        Node Verified
+                        Node Authenticated
                     </Badge>
                     <div className="space-y-4">
                         <h1 className="text-5xl md:text-7xl font-normal tracking-tighter text-[#2C241B] leading-tight">
