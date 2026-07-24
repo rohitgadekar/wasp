@@ -1142,7 +1142,7 @@ const StatusViewer = () => {
                                                 </div>
                                                 <div className="flex flex-wrap justify-center gap-6 mt-6">
                                                     {distributionData.map((item, i) => (
-                                                        <div key={i} className="flex flex-col items-center px-8 py-4 rounded-[2rem] min-w-[140px] bg-[#FAF9F5] border border-[#E5DCCB]/60">
+                                                        <div key={i} className="flex flex-col items-center px-8 py-4 rounded-[2rem] min-w-[140px] bg-[#FAF9F5">
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                                                                 <span className="text-xs font-sans font-bold uppercase tracking-wider" style={{ color: item.color }}>{item.name}</span>
@@ -1204,7 +1204,7 @@ const StatusViewer = () => {
                                                 </div>
                                                 <div className="flex flex-wrap justify-center gap-3 mt-8 max-w-2xl mx-auto">
                                                     {memberContributionData.map((item, i) => (
-                                                        <div key={i} className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E5DCCB]/60 bg-[#FAF9F5]">
+                                                        <div key={i} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#FAF9F5]">
                                                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                                                             <span className="text-[10px] font-sans font-bold uppercase tracking-wider" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{item.name}</span>
                                                             <span className="text-xs font-sans font-semibold ml-1" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{Math.round((item.value / dayStats.total) * 100)}%</span>

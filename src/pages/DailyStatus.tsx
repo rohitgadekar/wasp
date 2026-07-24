@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { renderToStaticMarkup } from "react-dom/server";
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarWithDots } from '@/components/ui/custom-calendar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -72,6 +73,18 @@ interface UpcomingHoliday {
 }
 
 const UPCOMING_HORIZON_DAYS = 30;
+
+const svg = renderToStaticMarkup(
+    <SiChinaeasternairlines
+        style={{
+            width: 224,
+            height: 224,
+            color: "#C5A880",
+            opacity: 0.09,
+        }}
+    />
+);
+
 
 const formatScheduleDay = (dateStr: string) => format(parseISO(dateStr), 'EEE');
 
@@ -726,6 +739,7 @@ const DailyStatus = () => {
             onclone: (doc) => {
                 doc.querySelectorAll('[data-export-hide]').forEach(el => el.remove());
 
+
                 // Fix header visibility
                 const header = doc.querySelector('h1');
                 if (header) {
@@ -905,8 +919,8 @@ const DailyStatus = () => {
                     </div>
 
 
-                    
-                    
+
+
 
                     {/* Calendar + Chart Grid */}
                     <div className="grid gap-8 lg:grid-cols-2">
@@ -1145,7 +1159,7 @@ const DailyStatus = () => {
                             </CardContent>
                         </Card>
                     </div>
-                    
+
 
                     {/* New Individual Charts Section */}
                     {dayStats.total > 0 && (
@@ -1607,18 +1621,18 @@ const DailyStatus = () => {
                                             className="group relative bg-[#FAF9F5] rounded-3xl p-6 hover:bg-[#C5A880]/10  border border-[#E5DCCB]/20 transition-all duration-300"
                                         >
                                             <div className="flex flex-col">
-                                                    <span className="font-inter font-semibold text-[#8C7654] text-lg">
-                                                        {status.profiles?.full_name || 'Anonymous User'}
-                                                    </span>
-                                                    <div className="flex items-center gap-2">
+                                                <span className="font-inter font-semibold text-[#8C7654] text-lg">
+                                                    {status.profiles?.full_name || 'Anonymous User'}
+                                                </span>
+                                                <div className="flex items-center gap-2">
                                                     <Badge className="text-xs w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-md px-3 py-1 text-[8px] font-sans font-bold uppercase tracking-widest mt-2">
-                                                    X{status.user_id.split("-")[0]}
+                                                        X{status.user_id.split("-")[0]}
                                                     </Badge>
                                                     <Badge className="text-xs w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-md px-3 py-1 text-[8px] font-sans font-bold uppercase tracking-widest mt-2">
-                                                    {leaveTypeByUserId[status.user_id] || 'Leave'}
+                                                        {leaveTypeByUserId[status.user_id] || 'Leave'}
                                                     </Badge>
-                                                    </div>
                                                 </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -1632,9 +1646,13 @@ const DailyStatus = () => {
                     <Card className="relative bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden">
                         <div
                             className="pointer-events-none absolute right-24 top-1/2 -translate-y-1/2 select-none"
-                            aria-hidden
+
                         >
-                            <SiChinaeasternairlines className="h-56 w-56 text-[#C5A880] opacity-[0.09]" />
+                            <img
+                                src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
+                                alt=""
+                                className="h-56 w-56 text-[#C5A880] "
+                            />
                         </div>
                         <CardHeader className="relative z-10 p-8 pb-4 flex flex-row items-center justify-between gap-4">
                             <div className="space-y-1">
@@ -1720,7 +1738,7 @@ const DailyStatus = () => {
                                                                     key={event.id}
                                                                     className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
                                                                 >
-                                                                    
+
                                                                     <p className="truncate font-inter text-sm font-semibold text-[#2C241B]">
                                                                         {event.leave.profiles?.full_name || 'Team member'}
                                                                     </p>
@@ -1730,7 +1748,7 @@ const DailyStatus = () => {
                                                                         </Badge>
                                                                         {event.isActive && (
                                                                             <span className="text-[7px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">
-                                                                              |  TODAY
+                                                                                |  TODAY
                                                                             </span>
                                                                         )}
                                                                     </div>
