@@ -215,14 +215,15 @@ const Layout = ({ children }: LayoutProps) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-[#FDFDFB]/95 backdrop-blur-xl border border-[#E5DCCB] rounded-2xl p-2 min-w-[220px] shadow-[0_30px_90px_rgba(197,168,128,0.18)] mt-2 animate-in zoom-in-95 fade-in-0 duration-300">
-                    <DropdownMenuItem onClick={() => navigate('/account')} className="rounded-xl focus:bg-[#2C241B] text-[#2C241B] p-3 cursor-pointer transition-all duration-300 ease-out group">
+                    <DropdownMenuItem onClick={() => navigate('/account')} className="rounded-xl focus:bg-[#2C241B] text-[#2C241B]  p-3 cursor-pointer transition-all duration-300 ease-out group">
                       <User className="h-4 w-4 mr-3 text-[#8C7654] group-hover:text-white transition-colors" />
-                      <span className="font-sans font-bold tracking-wide">Personal Account</span>
+                      <span className="font-sans font-bold tracking-wide group-data-[highlighted]:text-white">Personal Account</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-[#E5DCCB]/50 my-1" />
-                    <DropdownMenuItem onClick={() => signOut()} className="rounded-xl focus:bg-[#2C241B] p-3 cursor-pointer text-[#8C2B2B] font-sans font-bold tracking-wide transition-all duration-300 ease-out group">
-                      <LogOut className="h-4 w-4 mr-3 text-[#8C2B2B] group-hover:text-white" />
-                      Deauthorize Session
+                    <DropdownMenuItem onClick={() => signOut()} className="rounded-xl focus:bg-[#2C241B] p-3 cursor-pointer text-[#8C2B2B] font-sans font-bold tracking-wide  transition-all duration-300 ease-out group">
+                      <LogOut className="h-4 w-4 mr-3 text-[#8C2B2B] group-hover:text-white " />
+                      <span className="font-sans font-bold tracking-wide group-data-[highlighted]:text-white"> Deauthorize Session</span>
+                     
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

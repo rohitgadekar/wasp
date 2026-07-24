@@ -448,7 +448,7 @@ const MyAccount = () => {
                             </div>
                             <div className="space-y-0.5">
                                 <CardTitle className="text-2xl font-bold tracking-tight" style={{ color: BROWN }}>Security Protocol</CardTitle>
-                                <CardDescription className="font-sans font-bold uppercase text-[10px] tracking-[0.2em]" style={{ color: BROWN_LIGHT }}>Access Sequence Management</CardDescription>
+                                <CardDescription className="font-sans font-bold uppercase text-[10px] tracking-[0.2em]" style={{ color: BROWN_LIGHT }}>Update Password</CardDescription>
                             </div>
                         </div>
                         <div className="mt-5 h-px" style={{ background: `linear-gradient(to right, transparent, ${GOLD_LIGHT}, transparent)` }} />
@@ -456,7 +456,7 @@ const MyAccount = () => {
                     <CardContent className="px-8 pb-8">
                         <div className="grid gap-5 md:grid-cols-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="newPassword" className="text-[10px] font-sans font-bold uppercase tracking-[0.18em] block" style={{ color: BROWN_MID }}>New Sequence</Label>
+                                <Label htmlFor="newPassword" className="text-[10px] font-sans font-bold uppercase tracking-[0.18em] block" style={{ color: BROWN_MID }}>New Password</Label>
                                 <div className="relative">
                                     <Key className="absolute left-3.5 top-3 w-4 h-4" style={{ color: BROWN_LIGHT }} />
                                     <Input
@@ -471,7 +471,7 @@ const MyAccount = () => {
                                 </div>
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor="confirmPassword" className="text-[10px] font-sans font-bold uppercase tracking-[0.18em] block" style={{ color: BROWN_MID }}>Confirm Sequence</Label>
+                                <Label htmlFor="confirmPassword" className="text-[10px] font-sans font-bold uppercase tracking-[0.18em] block" style={{ color: BROWN_MID }}>Confirm Password</Label>
                                 <div className="relative">
                                     <Lock className="absolute left-3.5 top-3 w-4 h-4" style={{ color: BROWN_LIGHT }} />
                                     <Input
@@ -494,7 +494,7 @@ const MyAccount = () => {
                                     style={{ borderColor: GOLD_LIGHT }}
                                 >
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Update Sequence
+                                    Update Password
                                 </Button>
                             </div>
                         </div>

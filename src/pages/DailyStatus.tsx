@@ -794,12 +794,12 @@ const DailyStatus = () => {
         await exportToPNG();
 
         const subject = `Daily Activity Report - ${format(selectedDate, 'PPPP')}`;
-        const cc = "Aditya.Sanjay.Dahe@bristlecone.com,aakanksha.jain@bristlecone.com,Rohit.Gadekar@bristlecone.com,Divyansh.Singh@bristlecone.com,mouli.maiti@bristlecone.com,ayush.tyagi@bristlecone.com,anil.panigrahi@bristlecone.com,vitthal.dhakane@bristlecone.com,shubham.chakraborty@bristlecone.com,namrata.singh1@bristlecone.com"; // Add default CC if needed
+        const cc = "aakanksha.jain@bristlecone.com,Rohit.Gadekar@bristlecone.com,Divyansh.Singh@bristlecone.com,mouli.maiti@bristlecone.com,ayush.tyagi@bristlecone.com,anil.panigrahi@bristlecone.com,vitthal.dhakane@bristlecone.com,shubham.chakraborty@bristlecone.com,namrata.singh1@bristlecone.com"; // Add default CC if needed
 
         let body = `Hello Pankaj,\n\nPlease find logs for ${format(selectedDate, 'PPPP')}. A snapshot has been attached for quick reference.\n\n`;
 
 
-        body += `Logs can also be viewed at https://wasp.rohitgadekar.dev/p/status?date=${dateStr}.\n\nThis email was generated automatically for reporting purposes.\n\n\nWASP`;
+        body += `Logs can also be viewed at https://wasp.rohitgadekar.dev/p/status?date=${dateStr}\n\nThis link is protected by authentication and encrypted in transit. Access is restricted to authorized personnel only. If you are unable to access the report, please contact your system administrator.\n\nThis email was generated automatically for reporting purposes.\n\n\n-\nWASP\nBuilt to Keep Team in Sync.`;
 
         const mailtoUri = `mailto:pankaj.patil@bristlecone.com?cc=${cc}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         window.location.href = mailtoUri;
