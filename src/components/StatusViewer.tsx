@@ -1404,7 +1404,7 @@ const StatusViewer = () => {
                                 <Skeleton className="h-7 w-24 rounded-full bg-[#E5DCCB]/20" />
                             ) : (
                                 <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest">
-                                    {filteredUpcomingLeaves.length + upcomingHolidays.length} EVENTS
+                                    {scheduleTimeline.length} EVENTS
                                 </Badge>
                             )}
                         </CardHeader>
@@ -1449,11 +1449,6 @@ const StatusViewer = () => {
                                                                 {formatScheduleMonth(group.date)}
                                                             </span>
                                                         </div>
-                                                        {relativeLabel && (
-                                                            <Badge className="mt-1.5 bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-2 py-0.5 text-[7px] font-sans font-bold uppercase tracking-widest">
-                                                                {relativeLabel}
-                                                            </Badge>
-                                                        )}
                                                     </div>
 
                                                     <div className="flex flex-wrap items-start gap-2 pt-0.5">
@@ -1485,13 +1480,13 @@ const StatusViewer = () => {
                                                                     <p className="truncate font-inter text-sm font-semibold text-[#2C241B]">
                                                                         {event.leave.profiles?.full_name || 'Team member'}
                                                                     </p>
-                                                                    <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
+                                                                    <div className="flex flex-shrink-0 flex-row items-center justify-center gap-2">
                                                                         <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
                                                                             {event.leave.type || 'Leave'}
                                                                         </Badge>
                                                                         {event.isActive && (
                                                                             <span className="text-[7px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">
-                                                                                Active
+                                                                               | TODAY
                                                                             </span>
                                                                         )}
                                                                     </div>
