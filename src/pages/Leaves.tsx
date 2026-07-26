@@ -401,7 +401,7 @@ const Leaves = () => {
 
                     {/* ── Calendar Section ── */}
                     <div className="lg:col-span-8 space-y-8 ">
-                        <Card className="border border-[#E5DCCB] overflow-hidden shadow-xl rounded-3xl" style={{ background: '#FDFDFB' }}>
+                        <Card className="border border-[#E5DCCB] overflow-hidden shadow-xl rounded-3xl">
 
 
                             <CardHeader className="px-8 pt-7 pb-4">
@@ -518,7 +518,7 @@ const Leaves = () => {
                     <div className="lg:col-span-4 space-y-6">
 
                         {/* Selected Day Details */}
-                        <Card className="border border-[#E5DCCB] overflow-hidden shadow-xl rounded-3xl" style={{ background: '#FDFDFB' }}>
+                        <Card className="border border-[#E5DCCB] overflow-hidden shadow-xl rounded-3xl" >
                             <CardHeader className="px-6 pt-6 pb-3">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -555,8 +555,8 @@ const Leaves = () => {
                             <CardContent className="px-6 pt-4 pb-6 space-y-4">
                                 {/* Holiday Banner */}
                                 {holidays[format(selectedDate, 'yyyy-MM-dd')] && (
-                                    <div className="p-3.5 rounded-lg flex items-center gap-3" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.18)' }}>
-                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(139,92,246,0.12)' }}>
+                                    <div className="p-3.5 rounded-3xl flex items-center gap-3" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.18)' }}>
+                                        <div className="w-9 h-9 rounded-3xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(139,92,246,0.12)' }}>
                                             <TrendingUp className="w-4 h-4" style={{ color: '#7C3AED' }} />
                                         </div>
                                         <div>
