@@ -124,15 +124,13 @@ const Leaderboard = () => {
 
         return (
             <div
-                className="rounded-2xl border overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+                className="rounded-3xl border overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
                 style={{
                     background: `linear-gradient(160deg, #FDFDFB 0%, ${palette.bg} 100%)`,
                     borderColor: palette.border,
                     boxShadow: `0 4px 24px ${palette.glow}`,
                 }}
             >
-                {/* Thin top accent */}
-                <div className="h-1 w-full" style={{ background: `linear-gradient(to right, transparent, ${palette.badge}, transparent)` }} />
 
                 <div className="p-6 flex flex-col items-center gap-4 text-center">
                     {/* Rank badge */}
@@ -256,7 +254,7 @@ const Leaderboard = () => {
                                 return (
                                     <div
                                         key={entry.user_id}
-                                        className="flex items-center gap-4 md:gap-5 p-4 md:p-5 rounded-xl border group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                                        className="flex items-center gap-4 md:gap-5 p-4 md:p-5 rounded-3xl border group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
                                         style={{
                                             background: '#FDFDFB',
                                             borderColor: '#E3DAC9',

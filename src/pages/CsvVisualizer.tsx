@@ -130,12 +130,11 @@ const CsvVisualizer = () => {
         <div className="grid gap-8">
           {/* Visualization Card */}
           {data.length > 0 && (
-            <Card className="border-0 overflow-hidden shadow-xl animate-in fade-in duration-500" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
-              <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #C5A880, #A8896A, #C5A880)' }} />
+            <Card className="border-0 overflow-hidden rounded-3xl border border-[#E5DCCB] shadow-xl animate-in fade-in duration-500" style={{ background: '#FDFDFB' }}>
               <CardHeader className="px-8 pt-6 pb-3">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    
+
                     <div>
                       <h2 className="text-2xl font-bold" style={{ color: '#2C241B' }}>Structural Preview</h2>
                       <div className="flex items-center gap-2 mt-1">
@@ -145,10 +144,10 @@ const CsvVisualizer = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" onClick={handleCopy} className="rounded-full px-5 h-9 text-xs font-bold uppercase tracking-widest border transition-all" style={{ color: '#292725ff', borderColor: '#E3DAC9' }}>
+                    <Button variant="default" onClick={handleCopy} className="rounded-2xl px-5  text-xs font-bold uppercase tracking-widest border transition-all" >
                       <Copy className="mr-2 h-3.5 w-3.5" />Copy CSV
                     </Button>
-                    <Button variant="ghost" onClick={exportCsv} className="rounded-full px-5 h-9 text-xs font-bold uppercase tracking-widest border transition-all" style={{ color: '#292725ff', borderColor: '#E3DAC9' }}>
+                    <Button variant="default" onClick={exportCsv} className="rounded-2xl  px-5  text-xs font-bold uppercase tracking-widest border transition-all" >
                       <Download className="mr-2 h-3.5 w-3.5" />Sync to Input
                     </Button>
                   </div>
@@ -192,12 +191,11 @@ const CsvVisualizer = () => {
           )}
 
           {/* Main Input Card */}
-          <Card className="border-0 overflow-hidden shadow-xl" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
-            <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #C5A880, #A8896A, #C5A880)' }} />
+          <Card className="border-0 overflow-hidden shadow-xl rounded-3xl border border-[#E3DAC9]" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
             <CardHeader className="px-8 pt-6 pb-3">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  
+
                   <div>
                     <h2 className="text-2xl font-bold" style={{ color: '#2C241B' }}>Data Source</h2>
                     <p className="text-[10px] font-medium mt-0.5" style={{ color: '#A59582' }}>Paste raw CSV or upload a local file</p>
@@ -206,12 +204,12 @@ const CsvVisualizer = () => {
                 <div className="flex flex-wrap items-center gap-3">
                   <label htmlFor="csv-upload" className="cursor-pointer">
                     <input id="csv-upload" type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-                    <div className="rounded-full px-5 h-10 flex items-center justify-center text-xs font-bold uppercase tracking-widest border transition-all hover:scale-105" style={{ borderColor: '#E3DAC9', color: '#8C7654', background: '#FDFDFB' }}>
+                    <div className="rounded-full px-5 h-10 flex items-center justify-center text-xs font-bold uppercase tracking-widest border transition-all hover:scale-105">
                       <Upload className="mr-2 h-3.5 w-3.5" />Upload Dataset
                     </div>
                   </label>
-                  <Button onClick={parseCsv} className="rounded-full px-6 h-10 text-xs font-bold uppercase tracking-widest border-0 shadow-md transition-all hover:scale-105" style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B' }}>
-                    <Sparkles className="mr-2 h-3.5 w-3.5" />Parse Structure
+                  <Button variant='default' onClick={parseCsv} className="rounded-full px-6 h-10 text-xs font-bold uppercase tracking-widest border-0 shadow-md transition-all hover:scale-105">
+                    Parse CSV
                   </Button>
                 </div>
               </div>

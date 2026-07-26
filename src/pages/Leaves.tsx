@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTitle } from '@/hooks/use-title';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, parseISO, isValid, differenceInCalendarDays, isAfter, isBefore, startOfDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, UserPlus, Trash2, Pencil, Loader2, Plane, Palmtree, Clock, Info, TrendingUp, ChevronDown, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, UserPlus, Trash2, Pencil, Loader2, Plane, Palmtree, Clock, Info, TrendingUp, ChevronDown, Check, TentTree, Hospital, Siren } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -42,7 +42,6 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-
 interface Leave {
     id: string;
     user_id: string;
@@ -392,44 +391,23 @@ const Leaves = () => {
             <div className="relative space-y-10 mx-auto p-6 md:p-10 max-w-7xl pb-20 z-10">
 
                 {/* Page Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-center">
                     <Badge className="bg-[#C5A880]/10 text-[#8C7654] border border-[#E5DCCB] rounded-full px-6 py-1.5 uppercase tracking-[0.3em] text-[10px] font-sans font-bold shadow-sm">
                         Leave Calendar
                     </Badge>
-                    {canManageLeaves && (
-                        <Button
-                            onClick={() => {
-                                setEditingLeaveId(null);
-                                setNewLeave({
-                                    userId: '',
-                                    startDate: selectedDate,
-                                    endDate: selectedDate,
-                                    type: 'Vacation'
-                                });
-                                setIsAddDialogOpen(true);
-                            }}
-                            className="flex items-center gap-2 px-5 h-10 rounded-full text-xs font-bold uppercase tracking-widest shadow-md border-0 transition-all hover:scale-105 hover:shadow-lg"
-                            style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B' }}
-                        >
-                            <UserPlus className="w-3.5 h-3.5" />
-                            Assign Leave
-                        </Button>
-                    )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
                     {/* ── Calendar Section ── */}
-                    <div className="lg:col-span-8 space-y-8">
-                        <Card className="border-0 overflow-hidden shadow-xl" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
+                    <div className="lg:col-span-8 space-y-8 ">
+                        <Card className="border border-[#E5DCCB] overflow-hidden shadow-xl rounded-3xl" style={{ background: '#FDFDFB' }}>
 
-                            {/* Card header gold band */}
-                            <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #C5A880, #A8896A, #C5A880)' }} />
 
                             <CardHeader className="px-8 pt-7 pb-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        
+
                                         <div>
                                             <h2 className="text-2xl font-heading" style={{ color: '#2C241B', fontFamily: "'Inter', serif" }}>
                                                 {format(currentMonth, "MMMM yyyy")}
@@ -443,7 +421,7 @@ const Leaves = () => {
                                         <Button
                                             variant="ghost" size="icon"
                                             onClick={prevMonth}
-                                            className="w-9 h-9 rounded-full border hover:bg-[#C5A880] transition-all hover:scale-105"
+                                            className="w-9 h-9 rounded-full border hover:bg-[#E3DAC9] transition-all hover:scale-105"
                                             style={{ borderColor: '#E3DAC9', color: '#8C7654' }}
                                         >
                                             <ChevronLeft className="w-4 h-4" color='black' />
@@ -451,7 +429,7 @@ const Leaves = () => {
                                         <Button
                                             variant="ghost" size="icon"
                                             onClick={nextMonth}
-                                            className="w-9 h-9 rounded-full border hover:bg-[#C5A880] transition-all hover:scale-105"
+                                            className="w-9 h-9 rounded-full border hover:bg-[#E3DAC9] transition-all hover:scale-105"
                                             style={{ borderColor: '#E3DAC9', color: '#8C7654' }}
                                         >
                                             <ChevronRight className="w-4 h-4" color='black' />
@@ -464,7 +442,7 @@ const Leaves = () => {
                                 {/* Weekday headers */}
                                 <div className="grid grid-cols-7 gap-1 mb-2">
                                     {WEEKDAYS.map(day => (
-                                        <div key={day} className="text-center py-2 text-[9px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A59582' }}>
+                                        <div key={day} className="text-center py-2 text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A59582' }}>
                                             {day}
                                         </div>
                                     ))}
@@ -476,7 +454,7 @@ const Leaves = () => {
                                 {/* Day cells */}
                                 <div className="grid grid-cols-7 gap-1 md:gap-2">
                                     {leadingDays.map((_, i) => (
-                                        <div key={`empty-${i}`} className="aspect-square md:aspect-video" />
+                                        <div key={`empty-${i}`} className="aspect-square md:aspect-video " />
                                     ))}
                                     {days.map(day => {
                                         const dayLeaves = getDayStatus(day);
@@ -491,14 +469,14 @@ const Leaves = () => {
                                                 key={day.toISOString()}
                                                 onClick={() => setSelectedDate(day)}
                                                 className={cn(
-                                                    "relative flex flex-col items-center justify-center aspect-square md:aspect-video rounded-xl text-sm transition-all group",
+                                                    "relative flex flex-col items-center justify-center aspect-square md:aspect-video rounded-3xl text-sm transition-all group",
                                                     isSelected
                                                         ? "scale-105 z-10 shadow-lg"
                                                         : "hover:scale-[1.03]"
                                                 )}
                                                 style={
                                                     isSelected
-                                                        ? { background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#FDFDFB', boxShadow: '0 4px 16px rgba(197,168,128,0.4)' }
+                                                        ? { background: '#2C241B', color: '#EFEAE2', boxShadow: '0 4px 16px rgba(197,168,128,0.4)' }
                                                         : holiday
                                                             ? { background: 'rgba(139,92,246,0.08)', color: '#7C3AED', border: '1px solid rgba(139,92,246,0.2)' }
                                                             : isToday
@@ -540,9 +518,7 @@ const Leaves = () => {
                     <div className="lg:col-span-4 space-y-6">
 
                         {/* Selected Day Details */}
-                        <Card className="border-0 overflow-hidden shadow-xl" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
-                            <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #C5A880, #A8896A, #C5A880)' }} />
-
+                        <Card className="border border-[#E5DCCB] overflow-hidden shadow-xl rounded-3xl" style={{ background: '#FDFDFB' }}>
                             <CardHeader className="px-6 pt-6 pb-3">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -565,8 +541,8 @@ const Leaves = () => {
                                                 });
                                                 setIsAddDialogOpen(true);
                                             }}
-                                            className="w-9 h-9 rounded-full p-0 border-0 shadow-md transition-all hover:scale-110"
-                                            style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B' }}
+                                            variant='default'
+                                            className="w-9 h-9 rounded-full p-0 border-0 shadow-md"
                                         >
                                             <UserPlus className="w-4 h-4" />
                                         </Button>
@@ -603,58 +579,45 @@ const Leaves = () => {
                                         {leavesOnSelectedDate.map(leave => (
                                             <div
                                                 key={leave.id}
-                                                className="flex items-center justify-between p-3.5 rounded-lg border group transition-all"
-                                                style={{ background: 'rgba(197,168,128,0.04)', borderColor: '#E3DAC9' }}
+                                                className="flex items-center justify-between p-3.5 rounded-2xl border border-[#E3DAC9] group transition-all"
+                                                style={{ background: 'rgba(197,168,128,0.04)' }}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div
-                                                        className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm uppercase shadow-sm"
-                                                        style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B' }}
+                                                        className="w-10 h-10 text-[9px] rounded-3xl bg-[#E3DAC9]/20 text-[#BFA378] flex items-center justify-center font-bold uppercase shadow-sm"
                                                     >
-                                                        {leave.profiles?.full_name?.[0] || 'U'}
+                                                        {leave.profiles?.full_name?.[0] + leave.profiles?.full_name?.split(" ")[1][0] || 'U'}
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-sm" style={{ color: '#2C241B' }}>{leave.profiles?.full_name}</p>
                                                         <p className="text-[10px] font-medium flex items-center gap-1 mt-0.5" style={{ color: '#A59582' }}>
-                                                            <Palmtree className="w-3 h-3" /> {leave.type}
+                                                            {leave.type.toLowerCase() === 'personal leave' || leave.type.toLowerCase() === 'vacation' ? <TentTree className="w-3 h-3" /> : leave.type.toLowerCase() === "sick leave" ? <Hospital className="w-3 h-3" /> : <Siren className="w-3 h-3" />}  {leave.type}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 {canManageLeaves && (
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                                        <Button
-                                                            variant="ghost" size="icon"
-                                                            onClick={() => handleEditLeave(leave)}
-                                                            className="w-7 h-7 rounded-full transition-all hover:scale-110"
-                                                            style={{ color: '#8C7654' }}
-                                                        >
+                                                        <span className="border border-[#E3DAC9] hover:bg-[#E3DAC9] rounded-full p-2 hover:cursor-pointer" onClick={() => handleEditLeave(leave)}>
                                                             <Pencil className="w-3.5 h-3.5" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost" size="icon"
-                                                            onClick={() => confirmDeleteLeave(leave.id)}
-                                                            className="w-7 h-7 rounded-full transition-all hover:scale-110"
-                                                            style={{ color: '#C0392B' }}
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </Button>
+                                                        </span>
+                                                        <span className="border border-red-600/20 hover:bg-red-600/20 rounded-full p-2 hover:cursor-pointer" onClick={() => confirmDeleteLeave(leave.id)}>
+                                                            <Trash2 className="w-3.5 h-3.5" color="red" />
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-10 px-4 rounded-lg border border-dashed" style={{ borderColor: '#E3DAC9' }}>
-                                        <Info className="w-8 h-8 mx-auto mb-3" style={{ color: '#C5A880', opacity: 0.4 }} />
-                                        <p className="text-xs font-medium italic" style={{ color: '#A59582' }}>No absence records for this date</p>
+                                    <div className="text-center py-10 px-4 rounded-3xl border border-dashed" style={{ borderColor: '#E3DAC9' }}>
+                                        <p className="text-xs font-light" style={{ color: '#A59582' }}>No absence records for this date</p>
                                     </div>
                                 )}
                             </CardContent>
                         </Card>
 
                         {/* Quick Stat Card */}
-                        <Card className="border-0 overflow-hidden shadow-xl" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
-                            <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #C5A880, #A8896A, #C5A880)' }} />
+                        <Card className="border border-[#E5DCCB] overflow-hidden shadow-xl rounded-3xl" style={{ background: '#FDFDFB' }}>
                             <div className="px-6 py-5 flex items-center justify-between">
                                 <div>
                                     <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-1" style={{ color: '#A59582' }}>Monthly Personnel</p>
@@ -692,17 +655,14 @@ const Leaves = () => {
                             {userSummaries.map((summary, idx) => (
                                 <Card
                                     key={idx}
-                                    className="border-0 overflow-hidden shadow-md group transition-all hover:shadow-xl hover:-translate-y-0.5"
-                                    style={{ background: '#FDFDFB', boxShadow: '0 4px 20px rgba(44,36,27,0.08), 0 1px 0 #E3DAC9' }}
+                                    className="border border-[#E5DCCB] rounded-3xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:-translate-y-0.5"
                                 >
-                                    <div className="h-0.5 w-full" style={{ background: 'linear-gradient(to right, #C5A880, #A8896A)' }} />
                                     <div className="p-5 space-y-4">
                                         <div className="flex items-center justify-between">
                                             <div
-                                                className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg uppercase shadow-sm"
-                                                style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B' }}
+                                                className="w-11 h-11 text-sm rounded-3xl bg-[#E3DAC9]/20 text-[#BFA378] flex items-center justify-center font-bold text-lg uppercase shadow-sm"
                                             >
-                                                {summary.name[0]}
+                                                {summary.name[0] + summary.name.split(" ")[1][0]}
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: '#A59582' }}>Days Off</p>
@@ -773,7 +733,7 @@ const Leaves = () => {
                         <div className="absolute top-0 right-0 w-40 h-40 opacity-[0.06]"
                             style={{ background: 'radial-gradient(circle, #C5A880, transparent 70%)' }} />
 
-                        
+
 
                         <DialogHeader>
                             <DialogTitle
@@ -782,7 +742,7 @@ const Leaves = () => {
                             >
                                 {editingLeaveId ? 'Update Leave' : 'Assign Leave'}
                             </DialogTitle>
-                            
+
                         </DialogHeader>
                     </div>
 
@@ -934,19 +894,17 @@ const Leaves = () => {
                             variant="ghost"
                             onClick={() => setIsAddDialogOpen(false)}
                             disabled={actionLoading}
-                            className="rounded-full px-6 h-10 text-xs font-bold uppercase tracking-widest border transition-all hover:bg-[#FAF9F5]"
-                            style={{ color: '#8C7654', borderColor: '#E3DAC9', fontFamily: "'Inter', serif" }}
+                            className="rounded-3xl px-6 h-10 text-xs font-bold uppercase tracking-widest border"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleSaveLeave}
                             disabled={actionLoading}
-                            className="rounded-full px-8 h-10 text-xs font-bold uppercase tracking-widest border-0 shadow-lg transition-all hover:scale-105 hover:shadow-xl"
-                            style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)', color: '#2C241B', fontFamily: "'Inter', serif" }}
+                            className="rounded-3xl px-8 h-10 text-xs font-bold uppercase tracking-widest border-0 shadow-lg"
                         >
                             {actionLoading && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
-                            {editingLeaveId ? 'Update Protocol' : 'Assign Protocol'}
+                            {editingLeaveId ? 'Update' : 'Assign'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -958,7 +916,7 @@ const Leaves = () => {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent
                     className="p-0 gap-0 overflow-hidden border-0 shadow-2xl max-w-md"
-                    style={{ borderRadius: '1.25rem', background: '#FDFDFB', boxShadow: '0 25px 80px rgba(44,36,27,0.25)' }}
+                    style={{ borderRadius: '1.25rem', background: '#FDFDFB' }}
                 >
                     {/* Danger gradient header */}
                     <div
@@ -975,8 +933,8 @@ const Leaves = () => {
                                 Cancel Leave?
                             </AlertDialogTitle>
                             <AlertDialogDescription
-                                className="text-sm font-light italic mt-1"
-                                style={{ color: 'rgba(255,255,255,0.55)', fontFamily: "'Cormorant Garamond', serif" }}
+                                className="text-sm font-light mt-1"
+                                style={{ color: 'rgba(255,255,255,0.55)' }}
                             >
                                 This will permanently remove the assigned absence protocol from the system.
                             </AlertDialogDescription>

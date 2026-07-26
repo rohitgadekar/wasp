@@ -62,12 +62,12 @@ export function CalendarWithDots({
     };
 
     return (
-        <div className={cn("w-full  mx-auto bg-card rounded-lg  ", className)}>
+        <div className={cn("w-full  mx-auto  rounded-lg  ", className)}>
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
                 <button
                     onClick={prevMonth}
-                    className="p-2 rounded-md hover:bg-accent transition-colors hover:text-white"
+                    className="p-2 rounded-full hover:bg-[#E3DAC9] transition-colors hover:text-white border border-[#E3DAC9]"
                     aria-label="Previous month"
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -77,7 +77,7 @@ export function CalendarWithDots({
                 </h2>
                 <button
                     onClick={nextMonth}
-                    className="p-2 rounded-md hover:bg-accent transition-colors hover:text-white"
+                    className="p-2 rounded-full hover:bg-[#E3DAC9] transition-colors hover:text-white border border-[#E3DAC9]"
                     aria-label="Next month"
                 >
                     <ChevronRight className="w-5 h-5" />

@@ -79,7 +79,7 @@ const Layout = ({ children }: LayoutProps) => {
                       variant="ghost"
                       size="sm"
                       className={`rounded-full px-5 py-2.5 h-auto flex items-center gap-2 text-[11px] font-sans font-bold uppercase tracking-[0.15em] transition-all duration-500 ease-out hover:scale-105 transform-gpu ${['/', '/wiki', '/scripts', '/maps', '/ai-agent'].includes(location.pathname)
-                        ? 'bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D]'
+                        ? 'bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D] hover:text-white'
                         : 'text-[#5C5040] hover:bg-[#C5A880]/10 hover:text-[#2C241B]'
                         }`}
                     >
@@ -116,7 +116,7 @@ const Layout = ({ children }: LayoutProps) => {
                       variant="ghost"
                       size="sm"
                       className={`rounded-full px-5 py-2.5 h-auto flex items-center gap-2 text-[11px] font-sans font-bold uppercase tracking-[0.15em] transition-all duration-500 ease-out hover:scale-105 transform-gpu ${['/status', '/leaderboard', '/leaves'].includes(location.pathname)
-                        ? 'bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D]'
+                        ? 'bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D] hover:text-white'
                         : 'text-[#5C5040] hover:bg-[#C5A880]/10 hover:text-[#2C241B]'
                         }`}
                     >
@@ -130,7 +130,7 @@ const Layout = ({ children }: LayoutProps) => {
                       { to: '/status', icon: TbLogs, label: 'Logs', description: 'Daily Activity Tracking' },
                       { to: '/leaderboard', icon: Trophy, label: 'Ranks', description: 'Team Contribution Metrics' },
                       { to: '/leaves', icon: Calendar, label: 'Leaves', description: 'Time-off Management' },
-                      ...(role == 'owner' ? [{  to: '/insight-studio', icon: MdOutlineInsights, label: 'Insight Studio', description: 'Powerful insights, instantly.' }] : []),
+                      ...(role == 'owner' ? [{ to: '/insight-studio', icon: MdOutlineInsights, label: 'Insight Studio', description: 'Powerful insights, instantly.' }] : []),
                       // { to: '/insight-studio', icon: MdOutlineInsights, label: 'Insight Studio', description: 'Powerful insights, instantly.' },
                     ].map((item) => (
                       <DropdownMenuItem key={item.to} asChild className="rounded-2xl focus:bg-[#FAF8F5] p-3 transition-all duration-500 ease-out group cursor-pointer border border-transparent hover:border-[#E5DCCB]/50 transform-gpu">
@@ -154,7 +154,7 @@ const Layout = ({ children }: LayoutProps) => {
                       variant="ghost"
                       size="sm"
                       className={`rounded-full px-5 py-2.5 h-auto flex items-center gap-2 text-[11px] font-sans font-bold uppercase tracking-[0.15em] transition-all duration-500 ease-out hover:scale-105 transform-gpu ${isToolsActive
-                        ? 'bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D]'
+                        ? 'bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D] hover:text-white'
                         : 'text-[#5C5040] hover:bg-[#C5A880]/10 hover:text-[#2C241B]'
                         }`}
                     >
@@ -184,7 +184,7 @@ const Layout = ({ children }: LayoutProps) => {
                   <NavLink
                     to="/users"
                     className="rounded-full px-5 py-2.5 h-auto flex items-center gap-2 text-[11px] font-sans font-bold uppercase tracking-[0.15em] transition-all duration-500 ease-out hover:scale-105 transform-gpu "
-                    activeClassName="bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D] hover:text-[#2C241B]"
+                    activeClassName="bg-[#2C241B] text-[#EFEAE2] shadow-lg shadow-[#2C241B]/15 hover:bg-[#38322D] hover:text-white"
                   >
                     <Users className="h-4 w-4" />
                     People
@@ -228,7 +228,7 @@ const Layout = ({ children }: LayoutProps) => {
                     <DropdownMenuItem onClick={() => signOut()} className="rounded-xl focus:bg-[#2C241B] p-3 cursor-pointer text-[#8C2B2B] font-sans font-bold tracking-wide  transition-all duration-300 ease-out group">
                       <LogOut className="h-4 w-4 mr-3 text-[#8C2B2B] group-hover:text-white " />
                       <span className="font-sans font-bold tracking-wide group-data-[highlighted]:text-white"> Deauthorize Session</span>
-                     
+
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -236,7 +236,7 @@ const Layout = ({ children }: LayoutProps) => {
             )}
           </div>
         </div>
-      </header>
+      </header >
 
       {showBanner && <FarewellBanner onClose={() => setShowBanner(false)} />}
 
@@ -250,7 +250,7 @@ const Layout = ({ children }: LayoutProps) => {
       <QuickLinks />
       {/* <OnlineUsers /> */}
       <NyraFloatingButton />
-    </div>
+    </div >
   );
 };
 

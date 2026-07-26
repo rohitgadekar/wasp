@@ -187,7 +187,7 @@ const Scripts = () => {
                             <DialogTrigger asChild>
                                 <Button className="rounded-[2rem] px-10 h-16 bg-[#2C241B] hover:bg-[#38322D] text-[#EFEAE2] font-sans font-bold tracking-[0.15em] text-xs uppercase shadow-xl hover:-translate-y-1 active:scale-95 group transition-all shrink-0">
                                     <Plus className="mr-3 h-5 w-5 transition-transform group-hover:rotate-90 text-[#C5A880]" />
-                                    Initialize Script
+                                    Add Script
                                 </Button>
                             </DialogTrigger>
 
@@ -198,7 +198,7 @@ const Scripts = () => {
                                     <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#C5A880]/5 rounded-full blur-2xl pointer-events-none" />
                                     <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23C5A880'/%3E%3C/svg%3E")` }} />
                                     <div className="relative z-10 flex items-start gap-5">
-                                       
+
                                         <div className="flex-1 min-w-0">
                                             <div className="text-[9px] font-sans font-bold tracking-[0.3em] uppercase text-[#C5A880]/70 mb-1">
                                                 {editingScript ? 'Refinement Mode' : 'Addition Mode'}

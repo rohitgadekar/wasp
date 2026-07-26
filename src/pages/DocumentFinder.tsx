@@ -338,29 +338,23 @@ const DocumentFinder = () => {
                 </div>
 
                 {/* Search */}
-                <Card className="border-0 overflow-hidden shadow-xl" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
-                    <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #C5A880, #A8896A, #C5A880)' }} />
-                    <CardContent className="p-6">
-                        <div className="relative group/search">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors group-focus-within/search:text-[#8C7654]" style={{ color: '#A59582' }} />
-                            <Input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Enter EDI Code (e.g., 850, 810)..."
-                                className="h-14 pl-12 pr-6 text-lg font-semibold rounded-xl border focus-visible:ring-0 focus-visible:border-[#C5A880] transition-all placeholder:font-normal"
-                                style={{ borderColor: '#E3DAC9', background: 'rgba(44,36,27,0.02)', color: '#2C241B' }}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="relative group/search">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors group-focus-within/search:text-[#8C7654]" style={{ color: '#A59582' }} />
+                    <Input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Enter EDI Code (e.g., 850, 810)..."
+                        className="h-14 pl-12 pr-6 text-lg font-semibold rounded-3xl border focus-visible:ring-0 focus-visible:border-[#C5A880] transition-all placeholder:font-normal"
+                        style={{ borderColor: '#E3DAC9', background: 'rgba(44,36,27,0.02)', color: '#2C241B' }}
+                    />
+                </div>
 
                 {/* Results */}
                 <div className="space-y-6">
                     {exactMatch ? (
                         <div className="animate-in fade-in slide-in-from-bottom-3 duration-400">
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em] mb-3" style={{ color: '#8C7654' }}>Primary Match</p>
-                            <Card className="border-0 overflow-hidden shadow-xl" style={{ background: '#FDFDFB', boxShadow: '0 8px 40px rgba(44,36,27,0.10), 0 1px 0 #E3DAC9' }}>
-                                <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #C5A880, #A8896A, #C5A880)' }} />
+                            <Card className="border-0 overflow-hidden shadow-xl rounded-3xl border ">
                                 <CardContent className="p-8 flex flex-col md:flex-row items-center gap-8">
                                     <div className="shrink-0 w-28 h-28 rounded-2xl flex flex-col items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, #C5A880, #A8896A)' }}>
                                         <Hash className="w-5 h-5 mb-1" style={{ color: 'rgba(255,255,255,0.6)' }} />
@@ -395,7 +389,7 @@ const DocumentFinder = () => {
                     {filteredDocs.length > 0 && (
                         <div className="space-y-4">
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em]" style={{ color: '#A59582' }}>
-                                {exactMatch ? 'Other Suggestions' : 'Potential Matches'}
+                                {exactMatch ? '' : 'Potential Matches'}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {filteredDocs

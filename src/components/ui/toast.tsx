@@ -60,7 +60,7 @@ const dotVariants: Record<string, string> = {
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
-    VariantProps<typeof toastVariants>
+  VariantProps<typeof toastVariants>
 >(({ className, variant = "default", children, ...props }, ref) => {
   return (
     <ToastPrimitives.Root
@@ -80,13 +80,13 @@ const Toast = React.forwardRef<
       <div className="flex-1 min-w-0">{children}</div>
 
       {/* Thin progress bar at the bottom */}
-      <span className="absolute bottom-0 left-0 h-[2px] w-full overflow-hidden rounded-b-2xl">
+      <span className="absolute bottom-0 left-0 h-full w-full overflow-hidden rounded-b-2xl">
         <span
           className={cn(
             "block h-full origin-left animate-toast-progress",
             variant === "destructive"
-              ? "bg-gradient-to-r from-rose-400/60 to-rose-300/20"
-              : "bg-gradient-to-r from-primary/60 to-primary/10",
+              ? "bg-gradient-to-r from-rose-400/10 to-rose-300/10"
+              : "bg-gradient-to-r from-green-600/10 to-green-600/5",
           )}
         />
       </span>

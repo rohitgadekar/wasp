@@ -294,7 +294,7 @@ const Wiki = () => {
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     // variant="outline"
-                                    className="w-full h-16 rounded-[2rem] border border-[#E5DCCB] bg-[#FDFDFB] hover:bg-[#FAF9F5] hover:border-[#C5A880] focus:ring-0 outline-none px-6 text-sm font-sans font-bold text-[#2C241B] shadow-[0_15px_30px_rgba(197,168,128,0.08)] transition-all justify-start gap-3"
+                                    className="w-full h-16 rounded-[2rem] border border-[#E5DCCB] bg-[#FDFDFB]  hover:border-[#C5A880] focus:ring-0 outline-none px-6 text-sm font-sans font-bold text-[#2C241B] shadow-[0_15px_30px_rgba(197,168,128,0.08)] transition-all justify-start gap-3"
                                 >
                                     <Tag className="h-4 w-4 text-[#C5A880] shrink-0" />
                                     <span className="flex-1 text-left truncate">
@@ -347,7 +347,7 @@ const Wiki = () => {
                             <DialogTrigger asChild>
                                 <Button className="rounded-[2rem] px-10 h-16 bg-[#2C241B] hover:bg-[#38322D] text-[#EFEAE2] font-sans font-bold tracking-[0.15em] text-xs uppercase shadow-xl hover:-translate-y-1 active:scale-95 group transition-all shrink-0">
                                     <Plus className="mr-3 h-5 w-5 transition-transform group-hover:rotate-90 text-[#C5A880]" />
-                                    Publish Intelligence
+                                    Add Wiki
                                 </Button>
                             </DialogTrigger>
 

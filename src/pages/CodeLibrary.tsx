@@ -229,7 +229,7 @@ const SnippetFormDialogContent = ({
                   style={oneLight}
                   showLineNumbers
                   wrapLines={true}
-                  
+
                   wrapLongLines={true}
                   customStyle={{
                     margin: 0,
@@ -368,7 +368,7 @@ const CodeLibrary = () => {
         .from('code_snippets')
         .select('author_id, profiles(full_name, email)');
       if (error) throw error;
-      
+
       // Get unique contributors
       const uniqueContributors = Array.from(
         new Map(data.map((item: any) => [item.author_id, item])).values()
@@ -453,12 +453,12 @@ const CodeLibrary = () => {
 
           <Dialog modal={false} open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) setEditingSnippet(null); }}>
             <DialogTrigger asChild>
-              <Button className="rounded-[2rem] px-10 h-16 bg-[#2C241B] hover:bg-[#38322D] text-[#EFEAE2] font-sans font-bold tracking-[0.15em] text-xs uppercase shadow-xl hover:-translate-y-1 active:scale-95 group transition-all shrink-0">
+              <Button className="rounded-[2rem] hidden px-10 h-16 bg-[#2C241B] hover:bg-[#38322D] text-[#EFEAE2] font-sans font-bold tracking-[0.15em] text-xs uppercase shadow-xl hover:-translate-y-1 active:scale-95 group transition-all shrink-0">
                 <Plus className="mr-3 h-5 w-5 transition-transform group-hover:rotate-90 text-[#C5A880]" />
-                Publish Snippet
+                Add Snippet
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-[#FDFDFB] border border-[#E5DCCB] rounded-[2rem] p-0 max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_40px_100px_rgba(44,36,27,0.15)]">
+            <DialogContent className="bg-[#FDFDFB] border-0 border-[#E5DCCB] rounded-[2rem] p-0 max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_40px_100px_rgba(44,36,27,0.15)]">
               {/* Gradient Header Band */}
               <div className="relative flex-shrink-0 bg-gradient-to-br from-[#2C241B] via-[#3D3125] to-[#2C241B] px-8 pt-8 pb-6 overflow-hidden">
                 {/* Subtle ambient glow */}
@@ -528,7 +528,7 @@ const CodeLibrary = () => {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Total Snippets */}
-                <Card className="bg-gradient-to-br from-[#2C241B] to-[#3D3125] rounded-2xl border-0 overflow-hidden group hover:shadow-xl transition-all duration-300">
+                <Card className="bg-[#2C241B] rounded-3xl border-0 overflow-hidden group hover:shadow-xl transition-all duration-300">
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-xl bg-[#C5A880]/20 flex items-center justify-center">
@@ -541,7 +541,7 @@ const CodeLibrary = () => {
                 </Card>
 
                 {/* Languages */}
-                <Card className="bg-[#FDFDFB] rounded-2xl border border-[#E5DCCB] overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/50 transition-all duration-300">
+                <Card className="bg-[#FDFDFB] rounded-3xl border border-[#E5DCCB] overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/50 transition-all duration-300">
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-xl bg-[#C5A880]/10 flex items-center justify-center">
@@ -563,7 +563,7 @@ const CodeLibrary = () => {
                 </Card>
 
                 {/* Contributors */}
-                <Card className="bg-[#FDFDFB] rounded-2xl border border-[#E5DCCB] overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/50 transition-all duration-300">
+                <Card className="bg-[#FDFDFB] rounded-3xl border border-[#E5DCCB] overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/50 transition-all duration-300">
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-xl bg-[#C5A880]/10 flex items-center justify-center">
@@ -577,7 +577,7 @@ const CodeLibrary = () => {
                         return (
                           <Badge
                             key={contributor.author_id}
-                            className="bg-[#C5A880]/15 text-[#8C7654] border-none px-2.5 py-0.5 rounded-full text-[9px] font-sans font-bold tracking-wider"
+                            className="bg-[#C5A880]/15 text-[#8C7654] border-none px-2.5 py-0.5 rounded-full text-[8px] font-sans font-bold tracking-wider"
                           >
                             {name}
                           </Badge>
@@ -593,7 +593,7 @@ const CodeLibrary = () => {
                 </Card>
 
                 {/* Quick Actions */}
-                <Card className="bg-gradient-to-br from-[#C5A880]/10 to-[#A8896A]/10 rounded-2xl border border-[#C5A880]/30 overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/60 transition-all duration-300">
+                <Card className="bg-gradient-to-br from-[#C5A880]/10 to-[#A8896A]/10 rounded-3xl border border-[#C5A880]/30 overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/60 transition-all duration-300">
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-xl bg-[#C5A880]/20 flex items-center justify-center">
