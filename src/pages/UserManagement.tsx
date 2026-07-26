@@ -47,6 +47,7 @@ interface UserProfile {
   email: string;
   full_name: string;
   created_at: string;
+  is_banned: boolean;
   user_roles?: Array<{ role: string }>;
 }
 
@@ -129,6 +130,7 @@ const UserManagement = () => {
   });
 
   const [hiveToggleLoading, setHiveToggleLoading] = useState<string | null>(null);
+  const [banToggleLoading, setBanToggleLoading] = useState<string | null>(null);
 
   const handleHiveToggle = async (targetUserId: string, currentEnabled: boolean) => {
     if (userRole !== 'owner') return;
@@ -161,6 +163,41 @@ const UserManagement = () => {
 
     setHiveToggleLoading(null);
   };
+  const handleBanToggle = async (targetUser: UserProfile) => {
+    if (userRole !== 'owner' || targetUser.id === user?.id) return;
+
+    setBanToggleLoading(targetUser.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-user-ban`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ user_id: targetUser.id, banned: !targetUser.is_banned }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast({ variant: 'destructive', title: 'Unable to update account status', description: result.error || 'Please try again.' });
+        return;
+      }
+
+      toast({
+        title: targetUser.is_banned ? 'User unbanned' : 'User banned',
+        description: targetUser.is_banned
+          ? `${targetUser.full_name || targetUser.email} can sign in again.`
+          : `${targetUser.full_name || targetUser.email} can no longer sign in.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['users_list'] });
+    } catch {
+      toast({ variant: 'destructive', title: 'Unable to update account status', description: 'Please try again.' });
+    } finally {
+      setBanToggleLoading(null);
+    }
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
@@ -542,133 +579,265 @@ const UserManagement = () => {
             </div>
           </CardHeader>
           <div className="mx-8 h-px" style={{ background: 'linear-gradient(to right, transparent, #E3DAC9, transparent)' }} />
-          <CardContent className="px-8 pb-8 pt-4">
-            {loading ? (
-              <div className="py-20 flex flex-col items-center justify-center space-y-4">
-                <Loader2 className="h-10 w-10 animate-spin" style={{ color: '#C5A880' }} />
-                <p className="text-[10px] font-bold uppercase tracking-[0.4em]" style={{ color: '#A59582' }}>Syncing Database</p>
-              </div>
-            ) : (
-              <div className="rounded-xl border overflow-hidden" style={{ borderColor: '#E3DAC9' }}>
-                <div className="overflow-auto custom-scrollbar max-h-[600px]">
-                  <Table className="border-collapse">
-                    <TableHeader className="sticky top-0 z-20" style={{ background: '#FAF9F5' }}>
-                      <TableRow className="border-b h-11" style={{ borderColor: '#E3DAC9' }}>
-                        {['Identity', 'Email', 'Authorization', 'Deployment', 'Hive', 'Operations'].map((h, i, arr) => (
-                          <TableHead key={h} className="font-bold uppercase tracking-[0.15em] text-[10px] px-6" style={{ color: '#8C7654', borderRight: i < arr.length - 1 ? '1px solid #E3DAC9' : 'none', textAlign: i === arr.length - 1 ? 'right' : 'left' }}>
-                            {h === 'Hive' ? (
-                              <span className="flex items-center gap-1.5">
-                                <Hexagon className="w-3 h-3" />
-                                Hive
-                              </span>
-                            ) : h}
-                          </TableHead>
+          {/* ... keep everything above CardContent the same ... */}
+
+<CardContent className="px-8 pb-8 pt-4">
+  {loading ? (
+    <div className="py-20 flex flex-col items-center justify-center space-y-4">
+      <Loader2 className="h-10 w-10 animate-spin" style={{ color: '#C5A880' }} />
+      <p className="text-[10px] font-bold uppercase tracking-[0.4em]" style={{ color: '#A59582' }}>
+        Syncing Database
+      </p>
+    </div>
+  ) : (
+    <div className=" border overflow-hidden" style={{ borderColor: '#E3DAC9' }}>
+      <div className="overflow-auto custom-scrollbar max-h-[600px]">
+        <Table className="border-collapse">
+          <TableHeader className="sticky top-0 z-20" style={{ background: '#FAF9F5' }}>
+            <TableRow className="border-b h-11" style={{ borderColor: '#E3DAC9' }}>
+              {/* Identity (grouped) */}
+              <TableHead
+                className="font-bold uppercase tracking-[0.15em] text-[10px] px-6"
+                style={{ color: '#8C7654', borderRight: '1px solid #E3DAC9' }}
+              >
+                Identity
+              </TableHead>
+
+              {/* Authorization */}
+              <TableHead
+                className="font-bold uppercase tracking-[0.15em] text-[10px] px-6"
+                style={{ color: '#8C7654', borderRight: '1px solid #E3DAC9' }}
+              >
+                Authorization
+              </TableHead>
+
+              {/* Hive */}
+              <TableHead
+                className="font-bold uppercase tracking-[0.15em] text-[10px] px-6"
+                style={{ color: '#8C7654', borderRight: '1px solid #E3DAC9' }}
+              >
+                <span className="flex items-center gap-1.5">
+                  Hive EXT
+                </span>
+              </TableHead>
+
+              {/* Role */}
+              <TableHead
+                className="font-bold uppercase tracking-[0.15em] text-[10px] px-6 text-center"
+                style={{ color: '#8C7654', borderRight: '1px solid #E3DAC9' }}
+              >
+                Role
+              </TableHead>
+
+              {/* Ban */}
+              <TableHead
+                className="font-bold uppercase tracking-[0.15em] text-[10px] px-6 text-center"
+                style={{ color: '#8C7654', borderRight: '1px solid #E3DAC9' }}
+              >
+                Status
+              </TableHead>
+
+              {/* Delete */}
+              <TableHead
+                className="font-bold uppercase tracking-[0.15em] text-[10px] px-6 text-right"
+                style={{ color: '#8C7654' }}
+              >
+                Purge
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {users.map((mappedUser) => {
+              const mappedUserRole = getUserRole(mappedUser);
+              return (
+                <TableRow
+                  key={mappedUser.id}
+                  className="border-b transition-colors hover:bg-[#FAF9F5]"
+                  style={{ borderColor: '#F0EAE0' }}
+                >
+                  {/* ── Identity: name + status + email + deployment ── */}
+                  <TableCell className="px-6 py-4 border-r" style={{ borderColor: '#F0EAE0' }}>
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm" style={{ color: '#2C241B' }}>
+                            {mappedUser.full_name || 'Anonymous'}
+                          </span>
+                          {userRole === 'owner' && 
+                          <Badge
+                            className={`h-5 px-2 text-[8px] uppercase tracking-wider ${
+                              mappedUser.is_banned
+                                ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-50'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50'
+                            }`}
+                          >
+                            <span
+                              className={`mr-1 h-1.5 w-1.5 rounded-full ${
+                                mappedUser.is_banned ? 'bg-red-500' : 'bg-emerald-500'
+                              }`}
+                            />
+                            {mappedUser.is_banned ? 'Banned' : 'Active'}
+                          </Badge>}
+                        </div>
+                        <p className="text-xs truncate" style={{ color: '#A59582' }}>
+                          {mappedUser.email}
+                        </p>
+                        <p className="text-[10px] font-medium" style={{ color: '#A59582' }}>
+                          Deployed {format(new Date(mappedUser.created_at), 'MMM do, yyyy')}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+
+                  {/* ── Authorization badge ── */}
+                  <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
+                    <span
+                      className={`text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                        mappedUserRole === 'owner'
+                          ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                          : mappedUserRole === 'moderator'
+                            ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                            : mappedUserRole === 'manager'
+                              ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                              : 'bg-[rgba(197,168,128,0.08)] border border-[#E3DAC9]'
+                      }`}
+                      style={mappedUserRole === 'member' ? { color: '#8C7654' } : {}}
+                    >
+                      {getRoleBadgeLabel(mappedUserRole)}
+                    </span>
+                  </TableCell>
+
+                  {/* ── Hive toggle ── */}
+                  <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
+                    <div className="flex items-center gap-2.5">
+                      {hiveToggleLoading === mappedUser.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#C5A880' }} />
+                      ) : (
+                        <Switch
+                          checked={hiveAccessMap[mappedUser.id] ?? false}
+                          onCheckedChange={() =>
+                            handleHiveToggle(mappedUser.id, hiveAccessMap[mappedUser.id] ?? false)
+                          }
+                          disabled={userRole !== 'owner'}
+                          className={cn(
+                            'data-[state=checked]:bg-emerald-500',
+                            userRole !== 'owner' && 'opacity-40 cursor-not-allowed'
+                          )}
+                        />
+                      )}
+                      <span
+                        className={cn(
+                          'text-[10px] font-bold uppercase tracking-wider',
+                          hiveAccessMap[mappedUser.id] ? 'text-emerald-600' : 'text-muted-foreground/40'
+                        )}
+                      >
+                        {hiveAccessMap[mappedUser.id] ? 'On' : 'Off'}
+                      </span>
+                    </div>
+                  </TableCell>
+
+                  {/* ── Role change ── */}
+                  <TableCell className="px-6 h-16 border-r text-center" style={{ borderColor: '#F0EAE0' }}>
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          disabled={userRole !== 'owner' || mappedUser.id === user?.id}
+                          className="w-32 h-9 px-3 flex justify-between items-center rounded-md border text-[10px] font-bold uppercase tracking-wide bg-[#FDFDFB] text-[#2C241B] hover:bg-[#FAF9F5] hover:text-[#2C241B] disabled:opacity-50 transition-colors"
+                          style={{ borderColor: '#E3DAC9' }}
+                        >
+                          <span>{mappedUserRole}</span>
+                          <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        className="w-32 border shadow-xl rounded-xl p-1 z-50"
+                        style={{ borderColor: '#E3DAC9', background: '#FDFDFB' }}
+                      >
+                        {(['member', 'manager', 'moderator', 'owner'] as const).map((roleOption) => (
+                          <DropdownMenuItem
+                            key={roleOption}
+                            onClick={() => handleRoleChange(mappedUser.id, roleOption)}
+                            className="rounded-lg focus:bg-[#FAF9F5] focus:text-[#2C241B] cursor-pointer py-1.5"
+                          >
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wide ${
+                                mappedUserRole === roleOption ? 'text-[#8C7654]' : 'text-[#2C241B]'
+                              }`}
+                            >
+                              {roleOption}
+                            </span>
+                            {mappedUserRole === roleOption && (
+                              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#8C7654]" />
+                            )}
+                          </DropdownMenuItem>
                         ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {users.map((mappedUser) => {
-                        const mappedUserRole = getUserRole(mappedUser);
-                        return (
-                          <TableRow key={mappedUser.id} className="border-b transition-colors hover:bg-[#FAF9F5]" style={{ borderColor: '#F0EAE0' }}>
-                            <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 min-w-9 shrink-0 rounded-full flex items-center justify-center font-bold text-sm uppercase shadow-sm" style={{ background: 'rgba(197,168,128,0.12)', color: '#8C7654', border: '1px solid #E3DAC9' }}>
-                                  {mappedUser.full_name?.[0]?.toUpperCase() || 'U'}
-                                </div>
-                                <span className="font-semibold text-sm" style={{ color: '#2C241B' }}>{mappedUser.full_name || 'Anonymous'}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
-                              <span className="font-mono text-xs" style={{ color: '#A59582' }}>{mappedUser.email}</span>
-                            </TableCell>
-                            <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
-                              <span className={`text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
-                                mappedUserRole === 'owner' ? 'bg-rose-50 text-rose-600 border border-rose-200' :
-                                mappedUserRole === 'moderator' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
-                                mappedUserRole === 'manager' ? 'bg-blue-50 text-blue-600 border border-blue-200' :
-                                'bg-[rgba(197,168,128,0.08)] border border-[#E3DAC9]'
-                              }`} style={mappedUserRole === 'member' ? { color: '#8C7654' } : {}}>
-                                {getRoleBadgeLabel(mappedUserRole)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
-                              <span className="text-[10px] font-medium" style={{ color: '#A59582' }}>
-                                {format(new Date(mappedUser.created_at), 'MMM do, yyyy')}
-                              </span>
-                            </TableCell>
-                            {/* Hive Access Toggle — owner only */}
-                            <TableCell className="px-6 h-16 border-r" style={{ borderColor: '#F0EAE0' }}>
-                              <div className="flex items-center gap-2.5">
-                                {hiveToggleLoading === mappedUser.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#C5A880' }} />
-                                ) : (
-                                  <Switch
-                                    checked={hiveAccessMap[mappedUser.id] ?? false}
-                                    onCheckedChange={() =>
-                                      handleHiveToggle(mappedUser.id, hiveAccessMap[mappedUser.id] ?? false)
-                                    }
-                                    disabled={userRole !== 'owner'}
-                                    className={cn(
-                                      "data-[state=checked]:bg-emerald-500",
-                                      userRole !== 'owner' && "opacity-40 cursor-not-allowed"
-                                    )}
-                                  />
-                                )}
-                                <span className={cn(
-                                  "text-[10px] font-bold uppercase tracking-wider",
-                                  hiveAccessMap[mappedUser.id] ? "text-emerald-600" : "text-muted-foreground/40"
-                                )}>
-                                  {hiveAccessMap[mappedUser.id] ? 'On' : 'Off'}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="px-6 h-16 text-right">
-                              <div className="flex justify-end items-center gap-2">
-                                <DropdownMenu modal={false}>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      disabled={userRole !== 'owner' || mappedUser.id === user?.id}
-                                      className="w-32 h-9 px-3 flex justify-between items-center rounded-full border text-[10px] font-bold uppercase tracking-wide bg-[#FDFDFB] text-[#2C241B] hover:bg-[#FAF9F5] hover:text-[#2C241B] disabled:opacity-50 transition-colors"
-                                      style={{ borderColor: '#E3DAC9' }}
-                                    >
-                                      <span>{mappedUserRole}</span>
-                                      <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-2" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="w-32 border shadow-xl rounded-xl p-1 z-50" style={{ borderColor: '#E3DAC9', background: '#FDFDFB' }}>
-                                    {(['member', 'manager', 'moderator', 'owner'] as const).map(roleOption => (
-                                      <DropdownMenuItem
-                                        key={roleOption}
-                                        onClick={() => handleRoleChange(mappedUser.id, roleOption)}
-                                        className="rounded-lg focus:bg-[#FAF9F5] focus:text-[#2C241B] cursor-pointer py-1.5"
-                                      >
-                                        <span className={`text-[10px] font-bold uppercase tracking-wide ${mappedUserRole === roleOption ? "text-[#8C7654]" : "text-[#2C241B]"}`}>{roleOption}</span>
-                                        {mappedUserRole === roleOption && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#8C7654]"></span>}
-                                      </DropdownMenuItem>
-                                    ))}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                                <Button size="icon" variant="ghost"
-                                  onClick={() => { setUserToDelete(mappedUser); setIsDeleteDialogOpen(true); }}
-                                  disabled={!canDeleteUser(mappedUser)}
-                                  className="w-9 h-9 rounded-full border transition-all hover:scale-105"
-                                  style={{ color: '#C0392B', borderColor: '#E3DAC9' }}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                    })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </CardContent>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+
+                  {/* ── Ban / Unban ── */}
+                  <TableCell className="px-6 h-16 border-r text-center" style={{ borderColor: '#F0EAE0' }}>
+                    {userRole === 'owner' && mappedUser.id !== user?.id ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleBanToggle(mappedUser)}
+                        disabled={banToggleLoading === mappedUser.id}
+                        className={`h-9 rounded-md px-3 text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                          mappedUser.is_banned
+                            ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800'
+                            : 'border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700'
+                        }`}
+                      >
+                        {banToggleLoading === mappedUser.id && (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        )}
+                        {mappedUser.is_banned ? 'Unban' : 'Ban'}
+                      </Button>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground/40"><Badge
+                            className={`h-5 px-2 text-[8px] uppercase tracking-wider ${
+                              mappedUser.is_banned
+                                ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-50'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50'
+                            }`}
+                          >
+                            <span
+                              className={`mr-1 h-1.5 w-1.5 rounded-full ${
+                                mappedUser.is_banned ? 'bg-red-500' : 'bg-emerald-500'
+                              }`}
+                            />
+                            {mappedUser.is_banned ? 'Banned' : 'Active'}
+                          </Badge></span>
+                    )}
+                  </TableCell>
+
+                  {/* ── Delete ── */}
+                  <TableCell className="px-6 h-16 text-right">
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => {
+                        setUserToDelete(mappedUser);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                      disabled={!canDeleteUser(mappedUser)}
+                      className="w-9 h-9 rounded-md  transition-all hover:scale-105 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      style={{ color: '#C0392B' }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )}
+</CardContent>
         </Card>
       </div>
 

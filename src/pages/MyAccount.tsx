@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { User, Lock, Link as LinkIcon, Plus, Trash2, ExternalLink, Bookmark, Shield, Mail, Key, Globe, LogOut, Settings, Sparkles, UserCircle, Loader2 } from 'lucide-react';
+import { User, Lock, Link as LinkIcon, Plus, Trash2, ExternalLink, Bookmark, Shield, Mail, Key, Globe, LogOut, Settings, Sparkles, UserCircle, Loader2, Fingerprint } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useTitle } from '@/hooks/use-title';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -37,7 +37,7 @@ const BROWN_MID = '#8C7654';
 const BROWN_LIGHT = '#A59582';
 
 const MyAccount = () => {
-    const { user, signOut } = useAuth();
+    const { user, signOut, registerPasskey } = useAuth();
     const navigate = useNavigate();
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -52,6 +52,7 @@ const MyAccount = () => {
     const [newLinkUrl, setNewLinkUrl] = useState('');
     const [isAddingLink, setIsAddingLink] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [passkeyLoading, setPasskeyLoading] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
 
     // Fetch profile with TanStack Query
@@ -76,6 +77,16 @@ const MyAccount = () => {
             setSelectedAvatar(profile.avatar);
         }
     }, [profile]);
+
+    const { data: passkeys = [] } = useQuery({
+        queryKey: ['my_passkeys', user?.id],
+        queryFn: async () => {
+            const { data, error } = await supabase.auth.passkey.list();
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!user,
+    });
 
     // Fetch quick links with TanStack Query
     const { data: quickLinks = [] } = useQuery({
@@ -191,6 +202,30 @@ const MyAccount = () => {
             queryClient.invalidateQueries({ queryKey: ['my_quick_links', user?.id] });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
+        }
+    };
+
+    const handleRegisterPasskey = async () => {
+        setPasskeyLoading(true);
+        try {
+            const { error } = await registerPasskey();
+            if (!error) queryClient.invalidateQueries({ queryKey: ['my_passkeys', user?.id] });
+        } finally {
+            setPasskeyLoading(false);
+        }
+    };
+
+    const handleRemovePasskey = async (id: string) => {
+        setPasskeyLoading(true);
+        try {
+            const { error } = await supabase.auth.passkey.delete({ passkeyId: id });
+            if (error) throw error;
+            toast({ title: 'Passkey removed', description: 'The passkey was removed from your account.' });
+            queryClient.invalidateQueries({ queryKey: ['my_passkeys', user?.id] });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setPasskeyLoading(false);
         }
     };
 
@@ -322,7 +357,7 @@ const MyAccount = () => {
                                         <Bookmark className="w-5 h-5 text-[#C5A880]" />
                                     </div>
                                     <div className="space-y-0.5">
-                                        <CardTitle className="text-2xl font-bold tracking-tight" style={{ color: BROWN }}>System Node</CardTitle>
+                                        <CardTitle className="text-2xl font-bold tracking-tight" style={{ color: BROWN }}>Quick Links</CardTitle>
                                         <CardDescription className="font-sans font-bold uppercase text-[10px] tracking-[0.2em]" style={{ color: BROWN_LIGHT }}>Quick Access Protocol</CardDescription>
                                     </div>
                                 </div>
@@ -497,6 +532,73 @@ const MyAccount = () => {
                                     Update Password
                                 </Button>
                             </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* ── Passkeys Section ── */}
+                <Card className="border overflow-hidden transition-all duration-300 hover:shadow-xl rounded-2xl" style={cardStyle}>
+                    <div className="h-[3px] w-full" style={{ background: `linear-gradient(to right, ${GOLD}, #A8896A, ${GOLD})` }} />
+                    <CardHeader className="px-8 pt-7 pb-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
+                                <Fingerprint className="w-5 h-5 text-[#C5A880]" />
+                            </div>
+                            <div className="space-y-0.5">
+                                <CardTitle className="text-2xl font-bold tracking-tight" style={{ color: BROWN }}>Passkeys</CardTitle>
+                                <CardDescription className="font-sans font-bold uppercase text-[10px] tracking-[0.2em]" style={{ color: BROWN_LIGHT }}>WebAuthn Device Verification</CardDescription>
+                            </div>
+                        </div>
+                        <div className="mt-5 h-px" style={{ background: `linear-gradient(to right, transparent, ${GOLD_LIGHT}, transparent)` }} />
+                    </CardHeader>
+                    <CardContent className="px-8 pb-8 space-y-5">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-xl border p-5" style={{ borderColor: GOLD_LIGHT, background: IVORY2 }}>
+                            <div>
+                                <p className="font-sans font-bold text-sm" style={{ color: BROWN }}>Add this device as a passkey</p>
+                                <p className="text-xs mt-1" style={{ color: BROWN_LIGHT }}>
+                                    After setup, you can sign in using either your email and password or your passkey.
+                                </p>
+                            </div>
+                            <Button
+                                onClick={handleRegisterPasskey}
+                                disabled={passkeyLoading}
+                                className="rounded-md px-6 h-11 font-sans font-bold uppercase tracking-wider text-xs transition-all hover:opacity-90"
+                                style={{ background: BROWN, color: IVORY }}
+                            >
+                                {passkeyLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Fingerprint className="mr-2 h-4 w-4" />}
+                                Add Passkey
+                            </Button>
+                        </div>
+
+                        <div className="rounded-xl border overflow-hidden" style={{ borderColor: GOLD_LIGHT, background: IVORY2 }}>
+                            {passkeys.length === 0 ? (
+                                <div className="py-8 px-5 text-center">
+                                    <p className="text-[10px] font-sans font-bold uppercase tracking-[0.2em]" style={{ color: BROWN_LIGHT }}>No passkeys registered</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y" style={{ borderColor: GOLD_LIGHT }}>
+                                    {passkeys.map((passkey) => (
+                                        <div key={passkey.id} className="flex items-center justify-between px-5 py-3.5">
+                                            <div className="min-w-0">
+                                                <p className="font-sans font-medium text-sm truncate" style={{ color: BROWN }}>{passkey.friendly_name || 'Passkey'}</p>
+                                                <p className="text-[10px] font-sans uppercase tracking-widest" style={{ color: BROWN_LIGHT }}>
+                                                    Created {new Date(passkey.created_at).toLocaleDateString()}
+                                                    {passkey.last_used_at ? ` • Last used ${new Date(passkey.last_used_at).toLocaleDateString()}` : ''}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleRemovePasskey(passkey.id)}
+                                                disabled={passkeyLoading}
+                                                className="h-8 w-8 rounded-full text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

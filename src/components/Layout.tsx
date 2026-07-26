@@ -16,7 +16,10 @@ import { GiWaspSting } from "react-icons/gi";
 import { PiGitDiffBold } from "react-icons/pi";
 import { SiJira } from "react-icons/si";
 import { FarewellBanner } from './FarewellBanner';
+import { TbLogs } from "react-icons/tb";
 import { SiChinaeasternairlines } from "react-icons/si";
+import { MdOutlineInsights } from "react-icons/md";
+
 
 import {
   DropdownMenu,
@@ -124,9 +127,11 @@ const Layout = ({ children }: LayoutProps) => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="center" className="bg-[#FDFDFB]/95 backdrop-blur-xl border border-[#E5DCCB] rounded-3xl p-3 min-w-[280px] shadow-[0_30px_90px_rgba(197,168,128,0.18)] animate-in zoom-in-95 fade-in-0 duration-300">
                     {[
-                      { to: '/status', icon: Calendar, label: 'Logs', description: 'Daily Activity Tracking' },
+                      { to: '/status', icon: TbLogs, label: 'Logs', description: 'Daily Activity Tracking' },
                       { to: '/leaderboard', icon: Trophy, label: 'Ranks', description: 'Team Contribution Metrics' },
                       { to: '/leaves', icon: Calendar, label: 'Leaves', description: 'Time-off Management' },
+                      ...(role == 'owner' ? [{  to: '/insight-studio', icon: MdOutlineInsights, label: 'Insight Studio', description: 'Powerful insights, instantly.' }] : []),
+                      // { to: '/insight-studio', icon: MdOutlineInsights, label: 'Insight Studio', description: 'Powerful insights, instantly.' },
                     ].map((item) => (
                       <DropdownMenuItem key={item.to} asChild className="rounded-2xl focus:bg-[#FAF8F5] p-3 transition-all duration-500 ease-out group cursor-pointer border border-transparent hover:border-[#E5DCCB]/50 transform-gpu">
                         <NavLink to={item.to} className="flex items-start gap-4 w-full">

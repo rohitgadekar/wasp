@@ -150,26 +150,35 @@ export type Database = {
       profiles: {
         Row: {
           avatar: string | null
+          banned_at: string | null
+          banned_by: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
+          is_banned: boolean
           updated_at: string
         }
         Insert: {
           avatar?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
+          is_banned?: boolean
           updated_at?: string
         }
         Update: {
           avatar?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
+          is_banned?: boolean
           updated_at?: string
         }
         Relationships: []

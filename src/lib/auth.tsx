@@ -1,14 +1,16 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithPasskey: () => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  registerPasskey: () => Promise<{ error: any }>;
   loading: boolean;
 }
 
@@ -22,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -52,6 +54,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     }
     
+    return { error };
+  };
+
+  const signInWithPasskey = async () => {
+    const authAny = supabase.auth as any;
+
+    if (typeof authAny.signInWithPasskey !== 'function') {
+      const error = new Error('Passkeys are not supported by your current @supabase/supabase-js package version.');
+      toast({
+        variant: "destructive",
+        title: "Passkeys unavailable",
+        description: error.message,
+      });
+      return { error };
+    }
+
+    const { error } = await authAny.signInWithPasskey();
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error signing in with passkey",
+        description: error.message,
+      });
+    }
+
     return { error };
   };
 
@@ -93,8 +121,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const registerPasskey = async () => {
+    if (!window.isSecureContext || !('credentials' in navigator)) {
+      const error = new Error('Passkeys require HTTPS (or localhost) and a WebAuthn-capable browser.');
+      toast({
+        variant: "destructive",
+        title: "Passkeys unavailable",
+        description: error.message,
+      });
+      return { error };
+    }
+
+    const authAny = supabase.auth as any;
+
+    if (typeof authAny.registerPasskey !== 'function') {
+      const error = new Error('Passkeys require @supabase/supabase-js v2.105.0+ and a restarted dev server. Stop Vite, clear node_modules/.vite, then start with --force.');
+      toast({
+        variant: "destructive",
+        title: "Passkeys unavailable",
+        description: error.message,
+      });
+      return { error };
+    }
+
+    const { error } = await authAny.registerPasskey();
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Passkey registration failed",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Passkey added",
+        description: "You can now sign in with this passkey.",
+      });
+    }
+
+    return { error };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, loading }}>
+    <AuthContext.Provider value={{ user, session, signIn, signInWithPasskey, signUp, signOut, registerPasskey, loading }}>
       {children}
     </AuthContext.Provider>
   );

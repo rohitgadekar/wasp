@@ -1,1 +1,5 @@
 project_id = "nslyikktilelnqigidvk"
+
+# CORS preflight must reach the function; authorization is verified inside the function.
+[functions.manage-user-ban]
+verify_jwt = false

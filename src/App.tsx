@@ -27,6 +27,7 @@ import Leaves from "./pages/Leaves";
 import DocumentFinder from "./pages/DocumentFinder";
 import AiAgent from "./pages/AiAgent";
 import Hive from "./pages/Hive";
+import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -151,6 +152,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Hive />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/insight-studio" element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdvancedAnalytics />
                 </Layout>
               </ProtectedRoute>
             } />

@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { Badge } from '@/components/ui/badge';
 import { SiChinaeasternairlines } from "react-icons/si";
 
-import { Mail, Lock, Sparkles, Loader2 } from 'lucide-react';
+import { Mail, Lock, Sparkles, Loader2, Fingerprint } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -16,7 +16,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, signInWithPasskey, user } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -28,6 +28,15 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     const { error } = await signIn(email, password);
+    if (!error) {
+      navigate('/');
+    }
+    setIsLoading(false);
+  };
+
+  const handlePasskeySignIn = async () => {
+    setIsLoading(true);
+    const { error } = await signInWithPasskey();
     if (!error) {
       navigate('/');
     }
@@ -176,6 +185,17 @@ const Auth = () => {
                           Initialize Session
                         </span>
                       )}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      // variant="outline"
+                      onClick={handlePasskeySignIn}
+                      className="w-full h-12 rounded-md bg-white/40 border border-[#E3DAC9] hover:bg-[#FAF8F5] text-[#2C241B] font-sans font-semibold tracking-[0.18em] text-[10px] uppercase transition-all duration-300 flex items-center justify-center gap-2"
+                      disabled={isLoading}
+                    >
+                      <Fingerprint className="w-4 h-4 text-[#8C7654]" />
+                      Sign in with passkey
                     </Button>
 
                     <div className="flex items-center justify-center gap-2 py-1">
