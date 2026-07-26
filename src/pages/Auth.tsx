@@ -44,7 +44,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-tr from-[#FAF9F5] via-[#FDFDFB] to-[#F3EEE3] overflow-hidden">
+    <div className="relative min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-tr from-[#FAF9F5] via-[#FDFDFB] to-[#F3EEE3] overflow-hidden select-none">
       {/* Royale Luxury Light-Theme Ambient Lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-15%] left-[-15%] w-[50%] h-[50%] bg-[#E8DEC9]/35 rounded-full blur-[140px]" />
@@ -106,7 +106,7 @@ const Auth = () => {
         <div className="hidden md:flex items-center justify-center h-[450px]">
           <div className="w-px h-full bg-gradient-to-b from-transparent via-[#C5A880]/30 to-transparent relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#FAF9F5] border border-[#E5DCCB] flex items-center justify-center shadow-lg">
-              <div className="w-2 h-2 rotate-45 bg-[#C5A880] animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-[#C5A880]" />
             </div>
           </div>
         </div>
