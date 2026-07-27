@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarWithDots } from '@/components/ui/custom-calendar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar } from 'recharts';
-import { Download, FileSpreadsheet, Image, Share2, Plus, Trash2, Mail, Palmtree, TrendingUp } from 'lucide-react';
+import { Download, FileSpreadsheet, Image, Share2, Plus, Trash2, Mail, Palmtree, TrendingUp, Home } from 'lucide-react';
 import { SiChinaeasternairlines } from "react-icons/si";
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -112,6 +113,7 @@ const StatusViewer = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { toast } = useToast();
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     // URL-first date management
     const dateParam = searchParams.get('date');
@@ -229,8 +231,8 @@ const StatusViewer = () => {
         return taskStatuses.filter(status => !excludedIds.has(status.user_id));
     }, [taskStatuses, allProfiles, EXCLUDED_EMAILS]);
 
-       // Fetch leaves for selected date
-       const { data: leavesForDate = [] } = useQuery({
+    // Fetch leaves for selected date
+    const { data: leavesForDate = [] } = useQuery({
         queryKey: ['team_leaves', dateStr],
         queryFn: async () => {
             const { data, error } = await supabase
@@ -263,7 +265,7 @@ const StatusViewer = () => {
                 .order('start_date', { ascending: true });
 
             if (error) throw error;
-            return data as Leave[];
+            return data as any;
         },
     });
 
@@ -691,30 +693,11 @@ const StatusViewer = () => {
     return (
         <div className="relative min-h-screen bg-gradient-to-tr from-[#FAF9F5] via-[#FDFDFB] to-[#F3EEE3] select-none">
             {/* Floating Actions Hub */}
-            {/* <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-2xl px-6 py-4 rounded-full border border-white/20 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.2)] animate-in slide-in-from-bottom-8 duration-700">
-                <Button variant="ghost" className="rounded-full px-4 h-10 font-bold text-sm hover:bg-primary/10 hover:text-primary transition-all" onClick={exportToPDF}>
-                    <Download className="w-4 h-4 mr-2" /> PDF
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-3">
+                <Button variant="default" className="rounded-full px-6 h-12 w-12 text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all" onClick={() => { navigate("/") }}>
+                    <Home className="w-4 h-4" />
                 </Button>
-                <div className="w-px h-6 bg-foreground/10 mx-1" />
-                <Button variant="ghost" className="rounded-full px-4 h-10 font-bold text-sm hover:bg-primary/10 hover:text-primary transition-all" onClick={exportToPNG}>
-                    <Image className="w-4 h-4 mr-2" /> PNG
-                </Button>
-                <div className="w-px h-6 bg-foreground/10 mx-1" />
-                <Button variant="ghost" className="rounded-full px-4 h-10 font-bold text-sm hover:bg-primary/10 hover:text-primary transition-all" onClick={exportToExcel}>
-                    <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel
-                </Button>
-                <div className="w-px h-6 bg-foreground/10 mx-1" />
-                <Button variant="default" className="rounded-full px-6 h-10 font-bold text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all" onClick={sendEmailStatus}>
-                    <Mail className="w-4 h-4 mr-2" /> Mail
-                </Button>
-                <Button variant="outline" className="rounded-full px-6 h-10 font-bold text-sm hover:bg-primary border-0 transition-all" onClick={() => {
-                    const url = `${window.location.origin}${window.location.pathname}?date=${dateStr}`;
-                    navigator.clipboard.writeText(url);
-                    toast({ title: 'Share link copied to clipboard!' });
-                }}>
-                    <Share2 className="w-4 h-4 mr-2" /> Share
-                </Button>
-            </div> */}
+            </div>
 
 
             <div ref={exportRef} className="relative z-10 transition-all duration-500">
@@ -1012,7 +995,7 @@ const StatusViewer = () => {
                             <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden group">
                                 <CardHeader className="p-8 pb-4">
                                     <CardTitle className="text-2xl font-bold text-[#2C241B]">Individual Performance</CardTitle>
-                                    <p className="text-sm font-sans text-[#8C7654] mt-1 mb-4">Cases delivered by team members today</p>
+                                    <p className="text-sm font-sans text-[#8C7654] mt-1 mb-4">Cases delivered by team members as of {format(selectedDate, 'EEEE, MMMM do, yyyy')}</p>
                                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2 border-t border-[#E5DCCB]/60">
                                         <span className="flex items-center gap-2 text-xs font-sans font-bold text-[#8C7654] uppercase tracking-wider">
                                             <div className="w-2.5 h-2.5 rounded-full bg-[#8C7654]" />
@@ -1352,7 +1335,7 @@ const StatusViewer = () => {
                             <CardHeader className="p-10 pb-4 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
                                     <CardTitle className="text-2xl font-inter font-bold text-[#2C241B]">Personnel Absence Protocol</CardTitle>
-                                    <p className="text-sm font-inter  text-[#8C7654]">Team members currently on scheduled leave</p>
+                                    <p className="text-sm font-inter  text-[#8C7654]">Team members currently on scheduled leave {format(selectedDate, 'EEEE, MMMM do, yyyy')}</p>
                                 </div>
                                 <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest">
                                     {separatedStatuses.onLeave.length} PERSONNEL
@@ -1366,18 +1349,18 @@ const StatusViewer = () => {
                                             className="group relative bg-[#FAF9F5] rounded-3xl p-6 hover:bg-[#C5A880]/10  border border-[#E5DCCB]/20 transition-all duration-300"
                                         >
                                             <div className="flex flex-col">
-                                                    <span className="font-inter font-semibold text-[#8C7654] text-lg">
-                                                        {status.profiles?.full_name || 'Anonymous User'}
-                                                    </span>
-                                                    <div className="flex items-center gap-2">
+                                                <span className="font-inter font-semibold text-[#8C7654] text-lg">
+                                                    {status.profiles?.full_name || 'Anonymous User'}
+                                                </span>
+                                                <div className="flex items-center gap-2">
                                                     <Badge className="text-xs w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-md px-3 py-1 text-[8px] font-sans font-bold uppercase tracking-widest mt-2">
-                                                    X{status.user_id.split("-")[0]}
+                                                        X{status.user_id.split("-")[0]}
                                                     </Badge>
                                                     <Badge className="text-xs w-fit bg-[#C5A880]/15 text-[#8C7654] border-none rounded-md px-3 py-1 text-[8px] font-sans font-bold uppercase tracking-widest mt-2">
-                                                    {leaveTypeByUserId[status.user_id] || 'Leave'}
+                                                        {leaveTypeByUserId[status.user_id] || 'Leave'}
                                                     </Badge>
-                                                    </div>
                                                 </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -1387,15 +1370,19 @@ const StatusViewer = () => {
 
                     {/* Upcoming Schedule Overview */}
                     <Card className="relative bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden">
-                        <div
-                            className="pointer-events-none absolute right-24 top-1/2 -translate-y-1/2 select-none"
-                            aria-hidden
-                        >
-                            <SiChinaeasternairlines className="h-56 w-56 text-[#C5A880] opacity-[0.09]" />
-                        </div>
+                        {/* <div
+                                                className="pointer-events-none absolute right-24 top-1/2 -translate-y-1/2 select-none"
+                    
+                                            >
+                                                <img
+                                                    src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
+                                                    alt=""
+                                                    className="h-56 w-56 text-[#C5A880] "
+                                                />
+                                            </div> */}
                         <CardHeader className="relative z-10 p-8 pb-4 flex flex-row items-center justify-between gap-4">
                             <div className="space-y-1">
-                                <CardTitle className="text-2xl font-bold text-[#2C241B]">Upcoming Schedule</CardTitle>
+                                <CardTitle className="text-2xl font-bold text-[#2C241B]">Upcoming Leaves</CardTitle>
                                 <p className="text-sm font-inter text-[#8C7654]">
                                     Timeline for the next {UPCOMING_HORIZON_DAYS} days
                                 </p>
@@ -1423,21 +1410,72 @@ const StatusViewer = () => {
                                     <p className="text-sm font-inter text-[#8C7654]">No upcoming leaves or holidays in the next {UPCOMING_HORIZON_DAYS} days.</p>
                                 </div>
                             ) : (
-                                <div className="relative py-1">
+                                <div className="relative py-4">
                                     {scheduleTimeline.length > 1 && (
                                         <div
-                                            className="absolute left-6 top-7 bottom-7 w-0.5 -translate-x-1/2 bg-[#D4C4A8]/40"
+                                            className="absolute left-1/2 top-7 bottom-7 w-0.5 -translate-x-1/2 bg-[#D4C4A8]/40"
                                             aria-hidden
                                         />
                                     )}
 
                                     <div className="space-y-8">
-                                        {scheduleTimeline.map((group) => {
-                                            const relativeLabel = getRelativeScheduleLabel(group.date);
+                                        {scheduleTimeline.map((group, groupIdx) => {
+                                            const isEven = groupIdx % 2 === 0;
+
+                                            const renderEventContent = (event: ScheduleTimelineEvent) => {
+                                                if (event.kind === 'holiday') {
+                                                    return (
+                                                        <div
+                                                            key={event.id}
+                                                            className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
+                                                        >
+
+                                                            <p className="font-inter text-sm font-semibold text-[#2C241B]">
+                                                                {'Company Holiday'}
+                                                            </p>
+                                                            <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
+                                                                PTO
+                                                            </Badge>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div
+                                                        key={event.id}
+                                                        className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
+                                                    >
+                                                        <p className="truncate font-inter text-sm font-semibold text-[#2C241B]">
+                                                            {event.leave.profiles?.full_name || 'Team member'}
+
+                                                        </p>
+                                                        <span className="text-[7px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">
+                                                            X{event.leave.user_id.split("-")[0]}
+                                                        </span>
+                                                        <div className="flex flex-shrink-0 flex-row items-center justify-center gap-2">
+
+                                                            <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
+                                                                {event.leave.type || 'Leave'}
+                                                            </Badge>
+                                                            {event.isActive && (
+                                                                <span className="text-[7px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">
+                                                                    |  TODAY
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            };
 
                                             return (
-                                                <div key={group.date} className="relative flex gap-4">
-                                                    <div className="relative z-10 flex w-12 flex-shrink-0 flex-col items-center">
+                                                <div key={group.date} className="grid grid-cols-[1fr,auto,1fr] items-center gap-3 sm:gap-6">
+                                                    {/* Left side events */}
+                                                    <div className="flex flex-wrap items-center justify-end gap-2">
+                                                        {isEven && group.events.map(renderEventContent)}
+                                                    </div>
+
+                                                    {/* Center date marker */}
+                                                    <div className="relative z-10 flex flex-shrink-0 flex-col items-center">
                                                         <div className="flex h-14 w-12 flex-col items-center justify-center rounded-2xl border border-[#E5DCCB]/40 bg-[#FAF9F5] shadow-sm">
                                                             <span className="text-[8px] font-sans font-bold uppercase tracking-wider text-[#C5A880]">
                                                                 {formatScheduleDay(group.date)}
@@ -1451,48 +1489,9 @@ const StatusViewer = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex flex-wrap items-start gap-2 pt-0.5">
-                                                        {group.events.map((event) => {
-                                                            if (event.kind === 'holiday') {
-                                                                return (
-                                                                    <div
-                                                                        key={event.id}
-                                                                        className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
-                                                                    >
-                                                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#C5A880]/15 text-[#8C7654]">
-                                                                            <TrendingUp className="h-3.5 w-3.5" />
-                                                                        </div>
-                                                                        <p className="font-inter text-sm font-semibold text-[#2C241B]">
-                                                                            {'Company Holiday'}
-                                                                        </p>
-                                                                        <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-2.5 py-0.5 text-[7px] font-sans font-bold uppercase tracking-widest">
-                                                                            PTO
-                                                                        </Badge>
-                                                                    </div>
-                                                                );
-                                                            }
-
-                                                            return (
-                                                                <div
-                                                                    key={event.id}
-                                                                    className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
-                                                                >
-                                                                    <p className="truncate font-inter text-sm font-semibold text-[#2C241B]">
-                                                                        {event.leave.profiles?.full_name || 'Team member'}
-                                                                    </p>
-                                                                    <div className="flex flex-shrink-0 flex-row items-center justify-center gap-2">
-                                                                        <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
-                                                                            {event.leave.type || 'Leave'}
-                                                                        </Badge>
-                                                                        {event.isActive && (
-                                                                            <span className="text-[7px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">
-                                                                               | TODAY
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
+                                                    {/* Right side events */}
+                                                    <div className="flex flex-wrap items-center justify-start gap-2">
+                                                        {!isEven && group.events.map(renderEventContent)}
                                                     </div>
                                                 </div>
                                             );
