@@ -1098,7 +1098,7 @@ const StatusViewer = () => {
                                                                 cy="50%"
                                                                 innerRadius={70}
                                                                 outerRadius={95}
-                                                                paddingAngle={8}
+                                                                paddingAngle={2}
                                                                 dataKey="value"
                                                             >
                                                                 {distributionData.map((entry, index) => (
@@ -1159,7 +1159,7 @@ const StatusViewer = () => {
                                                                 cy="50%"
                                                                 innerRadius={70}
                                                                 outerRadius={95}
-                                                                paddingAngle={4}
+                                                                paddingAngle={2}
                                                                 dataKey="value"
                                                             >
                                                                 {memberContributionData.map((entry, index) => (
@@ -1187,7 +1187,7 @@ const StatusViewer = () => {
                                                 </div>
                                                 <div className="flex flex-wrap justify-center gap-3 mt-8 max-w-2xl mx-auto">
                                                     {memberContributionData.map((item, i) => (
-                                                        <div key={i} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#FAF9F5]">
+                                                        <div key={i} className="flex items-center gap-1.5 px-4 py-2 rounded-full">
                                                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                                                             <span className="text-[10px] font-sans font-bold uppercase tracking-wider" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{item.name}</span>
                                                             <span className="text-xs font-sans font-semibold ml-1" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{Math.round((item.value / dayStats.total) * 100)}%</span>
