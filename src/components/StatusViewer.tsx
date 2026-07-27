@@ -694,7 +694,7 @@ const StatusViewer = () => {
         <div className="relative min-h-screen bg-gradient-to-tr from-[#FAF9F5] via-[#FDFDFB] to-[#F3EEE3] select-none">
             {/* Floating Actions Hub */}
             <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-3">
-                <Button variant="default" className="rounded-full px-6 h-12 w-12 text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all" onClick={() => { navigate("/") }}>
+                <Button variant="default" className="rounded-full px-2 h-9 w-9 text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all" onClick={() => { navigate("/") }}>
                     <Home className="w-4 h-4" />
                 </Button>
             </div>
