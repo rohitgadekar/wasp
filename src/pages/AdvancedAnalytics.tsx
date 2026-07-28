@@ -239,7 +239,7 @@ const AdvancedAnalytics = () => {
         (profile) => !EXCLUDED_EMAILS.includes(profile.email ?? "")
       );
     },
-    enabled: isOwner,
+    // enabled: isOwner,
   });
 
   const { data: reports = [], isLoading: loadingReports } = useQuery({
@@ -255,7 +255,7 @@ const AdvancedAnalytics = () => {
       if (error) throw error;
       return data as TaskStatus[];
     },
-    enabled: isOwner && !!selectedUserId && hasCompleteRange,
+    enabled: !!selectedUserId && hasCompleteRange,
   });
 
   const { data: leaves = [], isLoading: loadingLeaves } = useQuery({
@@ -271,7 +271,7 @@ const AdvancedAnalytics = () => {
       if (error) throw error;
       return data as Leave[];
     },
-    enabled: isOwner && !!selectedUserId && hasCompleteRange,
+    enabled: !!selectedUserId && hasCompleteRange,
   });
 
   const selectedProfile = profiles.find(
