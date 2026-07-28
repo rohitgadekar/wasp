@@ -130,7 +130,7 @@ const Layout = ({ children }: LayoutProps) => {
                       { to: '/status', icon: TbLogs, label: 'Logs', description: 'Daily Activity Tracking' },
                       { to: '/leaderboard', icon: Trophy, label: 'Ranks', description: 'Team Contribution Metrics' },
                       { to: '/leaves', icon: Calendar, label: 'Leaves', description: 'Time-off Management' },
-                      ...(role == 'owner' ? [{ to: '/insight-studio', icon: MdOutlineInsights, label: 'Insight Studio', description: 'Powerful insights, instantly.' }] : []),
+                      ...(role == 'owner' || role == 'manager' ? [{ to: '/insight-studio', icon: MdOutlineInsights, label: 'Insight Studio', description: 'Powerful insights, instantly.' }] : []),
                       // { to: '/insight-studio', icon: MdOutlineInsights, label: 'Insight Studio', description: 'Powerful insights, instantly.' },
                     ].map((item) => (
                       <DropdownMenuItem key={item.to} asChild className="rounded-2xl focus:bg-[#FAF8F5] p-3 transition-all duration-500 ease-out group cursor-pointer border border-transparent hover:border-[#E5DCCB]/50 transform-gpu">
