@@ -128,7 +128,7 @@ const AiAgent = () => {
 
     if (data) {
       const sessionDate = new Date(sessionId).toDateString();
-      const sessionMessages = data.filter(msg => 
+      const sessionMessages = data.filter(msg =>
         new Date(msg.created_at).toDateString() === sessionDate
       );
 
@@ -176,11 +176,7 @@ const AiAgent = () => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
 
         <div className="relative z-10 max-w-2xl w-full flex flex-col items-center justify-center">
-          <div className="relative inline-flex mb-10">
-            <div className="relative w-32 h-32 rounded-full flex items-center justify-center">
-              <img src="/nyra.png" alt="logo" className="rounded-full w-full h-full" />
-            </div>
-          </div>
+
 
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 leading-tight">
             Hey, {user?.user_metadata?.full_name.split(" ")[0] || "there"}
@@ -198,7 +194,7 @@ const AiAgent = () => {
             <Button
               onClick={() => navigate('/')}
               size="lg"
-              className="rounded-full px-10 h-14 text-base font-bold shadow-xl hover:scale-105 active:scale-95 transition-all"
+              className="rounded-full font-bold shadow-xl hover:scale-105 active:scale-95 transition-all"
             >
               Back to Dashboard
             </Button>
@@ -220,11 +216,11 @@ const AiAgent = () => {
 
   const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!user) return;
 
     const sessionDate = new Date(sessionId).toDateString();
-    
+
     const { data: sessionMessages } = await supabase
       .from('ai_chat_messages')
       .select('id')
@@ -250,7 +246,7 @@ const AiAgent = () => {
       }
 
       setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-      
+
       if (currentSessionId === sessionId) {
         handleNewChat();
       }
@@ -540,7 +536,7 @@ const AiAgent = () => {
                 <div className="flex w-full justify-start mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                   <div className="flex max-w-[85%] gap-4 flex-row items-end">
                     <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white dark:bg-zinc-900 border border-white/20 flex items-center justify-center shrink-0 shadow-2xl overflow-hidden">
-                    <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
+                      <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
                     </div>
                     <div className="px-6 py-4 rounded-[2.5rem] border border-white/20 flex items-center gap-3">
                       <div className="flex gap-1.5">
