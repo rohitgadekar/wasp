@@ -492,8 +492,9 @@ const AdvancedAnalytics = () => {
     );
   }
 
-  if (!isOwner || role !== "manager") return <Navigate to="/" replace />;
-
+  if (role !== "owner" && role !== "manager") {
+    return <Navigate to="/" replace />;
+  }
   const isLoading = loadingReports || loadingLeaves;
 
   return (
