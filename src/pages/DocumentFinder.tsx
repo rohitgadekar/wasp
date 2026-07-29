@@ -399,7 +399,7 @@ const DocumentFinder = () => {
                                         <div
                                             key={doc.code}
                                             onClick={() => setSearch(doc.code)}
-                                            className="flex items-center gap-5 p-4 rounded-xl border cursor-pointer group/item transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                                            className="flex items-center gap-5 p-4 rounded-3xl border cursor-pointer group/item transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                                             style={{ background: '#FDFDFB', borderColor: '#E3DAC9' }}
                                         >
                                             <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover/item:shadow-sm" style={{ background: 'rgba(197,168,128,0.08)', border: '1px solid #E3DAC9' }}>
