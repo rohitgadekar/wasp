@@ -261,7 +261,7 @@ const MyAccount = () => {
                     <Card className="border overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl rounded-3xl" style={cardStyle}>
                         <CardHeader className="px-8 pt-7 pb-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-full overflow-hidden border flex items-center justify-center bg-[#FAF9F5]" style={{ borderColor: GOLD_LIGHT }}>
+                                <div className="w-12 h-12 rounded-full overflow-hidden border flex items-center justify-center bg-[#FAF9F5]" style={{ borderColor: GOLD_LIGHT }}>
                                     {selectedAvatar ? (
                                         <img src={selectedAvatar} alt="Profile" className="w-full h-full object-cover" />
                                     ) : (
@@ -317,7 +317,7 @@ const MyAccount = () => {
                                             type="button"
                                             onClick={() => setSelectedAvatar(url)}
                                             className={cn(
-                                                "w-14 h-14 rounded-xl overflow-hidden border-2 transition-all hover:scale-105 active:scale-95",
+                                                "w-13 h-13 rounded-full overflow-hidden  transition-all hover:scale-105 active:scale-95",
                                                 selectedAvatar === url
                                                     ? "scale-105 opacity-100"
                                                     : "opacity-60 hover:opacity-90"
@@ -350,7 +350,7 @@ const MyAccount = () => {
                         <CardHeader className="px-8 pt-7 pb-4">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
+                                    <div className="w-12 h-12 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
                                         <Bookmark className="w-5 h-5 text-[#C5A880]" />
                                     </div>
                                     <div className="space-y-0.5">
@@ -474,7 +474,7 @@ const MyAccount = () => {
                 <Card className="border overflow-hidden transition-all duration-300 hover:shadow-xl rounded-3xl" style={cardStyle}>
                     <CardHeader className="px-8 pt-7 pb-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
+                            <div className="w-12 h-12 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
                                 <Shield className="w-5 h-5 text-[#C5A880]" />
                             </div>
                             <div className="space-y-0.5">
@@ -536,7 +536,7 @@ const MyAccount = () => {
                 <Card className="border overflow-hidden transition-all duration-300 hover:shadow-xl rounded-3xl" style={cardStyle}>
                     <CardHeader className="px-8 pt-7 pb-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
+                            <div className="w-12 h-12 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
                                 <Fingerprint className="w-5 h-5 text-[#C5A880]" />
                             </div>
                             <div className="space-y-0.5">
@@ -602,7 +602,7 @@ const MyAccount = () => {
                 <Card className="border overflow-hidden transition-all duration-300 rounded-3xl bg-red-50 border-red-200">
                     <CardContent className="px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center">
                                 <LogOut className="w-5 h-5 text-rose-500" />
                             </div>
                             <div className="space-y-0.5">
