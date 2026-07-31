@@ -258,12 +258,10 @@ const MyAccount = () => {
                 <div className="grid gap-10 lg:grid-cols-2">
 
                     {/* ── Profile Identity Card ── */}
-                    <Card className="border overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl rounded-2xl" style={cardStyle}>
-                        {/* Gold top bar */}
-                        <div className="h-[3px] w-full" style={{ background: `linear-gradient(to right, ${GOLD}, #A8896A, ${GOLD})` }} />
+                    <Card className="border overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl rounded-3xl" style={cardStyle}>
                         <CardHeader className="px-8 pt-7 pb-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl overflow-hidden border flex items-center justify-center bg-[#FAF9F5]" style={{ borderColor: GOLD_LIGHT }}>
+                                <div className="w-14 h-14 rounded-full overflow-hidden border flex items-center justify-center bg-[#FAF9F5]" style={{ borderColor: GOLD_LIGHT }}>
                                     {selectedAvatar ? (
                                         <img src={selectedAvatar} alt="Profile" className="w-full h-full object-cover" />
                                     ) : (
@@ -283,7 +281,7 @@ const MyAccount = () => {
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-sans font-bold uppercase tracking-[0.18em] block" style={{ color: BROWN_MID }}>Digital Anchor</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3.5 top-3 w-4 h-4" style={{ color: BROWN_LIGHT }} />
+                                    <Mail className="absolute left-3.5 top-4 w-4 h-4" style={{ color: BROWN_LIGHT }} />
                                     <Input
                                         value={user?.email || ''}
                                         disabled
@@ -297,7 +295,7 @@ const MyAccount = () => {
                             <div className="space-y-1.5">
                                 <Label htmlFor="fullName" className="text-[10px] font-sans font-bold uppercase tracking-[0.18em] block" style={{ color: BROWN_MID }}>Legal Name</Label>
                                 <div className="relative">
-                                    <Sparkles className="absolute left-3.5 top-3 w-4 h-4 transition-colors" style={{ color: BROWN_LIGHT }} />
+                                    <Sparkles className="absolute left-3.5 top-4 w-4 h-4 transition-colors" style={{ color: BROWN_LIGHT }} />
                                     <Input
                                         id="fullName"
                                         value={fullName}
@@ -338,7 +336,7 @@ const MyAccount = () => {
                             <Button
                                 onClick={handleUpdateProfile}
                                 disabled={loading}
-                                className="w-full rounded-md h-11 font-sans font-bold uppercase tracking-widest text-xs transition-all hover:opacity-90 active:scale-[0.99]"
+                                className="w-full rounded-3xl h-11 font-sans font-bold uppercase tracking-widest text-xs transition-all hover:opacity-90 active:scale-[0.99]"
                                 style={{ background: BROWN, color: IVORY }}
                             >
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -348,12 +346,11 @@ const MyAccount = () => {
                     </Card>
 
                     {/* ── Quick Links Card ── */}
-                    <Card className="border overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl rounded-2xl" style={cardStyle}>
-                        <div className="h-[3px] w-full" style={{ background: `linear-gradient(to right, ${GOLD}, #A8896A, ${GOLD})` }} />
+                    <Card className="border overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl rounded-3xl" style={cardStyle}>
                         <CardHeader className="px-8 pt-7 pb-4">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
+                                    <div className="w-14 h-14 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
                                         <Bookmark className="w-5 h-5 text-[#C5A880]" />
                                     </div>
                                     <div className="space-y-0.5">
@@ -427,7 +424,7 @@ const MyAccount = () => {
                         </CardHeader>
 
                         <CardContent className="px-8 pb-8 flex-1">
-                            <div className="rounded-xl border overflow-hidden" style={{ borderColor: GOLD_LIGHT, background: IVORY2 }}>
+                            <div className="rounded-3xl border overflow-hidden" style={{ borderColor: GOLD_LIGHT, background: IVORY2 }}>
                                 {quickLinks.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-12 px-8 text-center space-y-3">
                                         <div className="w-12 h-12 rounded-full border flex items-center justify-center opacity-40" style={{ borderColor: GOLD_LIGHT }}>
@@ -474,11 +471,10 @@ const MyAccount = () => {
                 </div>
 
                 {/* ── Change Password Section ── */}
-                <Card className="border overflow-hidden transition-all duration-300 hover:shadow-xl rounded-2xl" style={cardStyle}>
-                    <div className="h-[3px] w-full" style={{ background: `linear-gradient(to right, ${GOLD}, #A8896A, ${GOLD})` }} />
+                <Card className="border overflow-hidden transition-all duration-300 hover:shadow-xl rounded-3xl" style={cardStyle}>
                     <CardHeader className="px-8 pt-7 pb-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
+                            <div className="w-14 h-14 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
                                 <Shield className="w-5 h-5 text-[#C5A880]" />
                             </div>
                             <div className="space-y-0.5">
@@ -537,11 +533,10 @@ const MyAccount = () => {
                 </Card>
 
                 {/* ── Passkeys Section ── */}
-                <Card className="border overflow-hidden transition-all duration-300 hover:shadow-xl rounded-2xl" style={cardStyle}>
-                    <div className="h-[3px] w-full" style={{ background: `linear-gradient(to right, ${GOLD}, #A8896A, ${GOLD})` }} />
+                <Card className="border overflow-hidden transition-all duration-300 hover:shadow-xl rounded-3xl" style={cardStyle}>
                     <CardHeader className="px-8 pt-7 pb-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
+                            <div className="w-14 h-14 rounded-full bg-[#FAF9F5] border flex items-center justify-center" style={{ borderColor: GOLD_LIGHT }}>
                                 <Fingerprint className="w-5 h-5 text-[#C5A880]" />
                             </div>
                             <div className="space-y-0.5">
@@ -552,7 +547,7 @@ const MyAccount = () => {
                         <div className="mt-5 h-px" style={{ background: `linear-gradient(to right, transparent, ${GOLD_LIGHT}, transparent)` }} />
                     </CardHeader>
                     <CardContent className="px-8 pb-8 space-y-5">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-xl border p-5" style={{ borderColor: GOLD_LIGHT, background: IVORY2 }}>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl border p-5" style={{ borderColor: GOLD_LIGHT, background: IVORY2 }}>
                             <div>
                                 <p className="font-sans font-bold text-sm" style={{ color: BROWN }}>Add this device as a passkey</p>
                                 <p className="text-xs mt-1" style={{ color: BROWN_LIGHT }}>
@@ -562,7 +557,7 @@ const MyAccount = () => {
                             <Button
                                 onClick={handleRegisterPasskey}
                                 disabled={passkeyLoading}
-                                className="rounded-md px-6 h-11 font-sans font-bold uppercase tracking-wider text-xs transition-all hover:opacity-90"
+                                className="rounded-3xl px-6 h-11 font-sans font-bold uppercase tracking-wider text-xs transition-all hover:opacity-90"
                                 style={{ background: BROWN, color: IVORY }}
                             >
                                 {passkeyLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Fingerprint className="mr-2 h-4 w-4" />}
@@ -570,7 +565,7 @@ const MyAccount = () => {
                             </Button>
                         </div>
 
-                        <div className="rounded-xl border overflow-hidden" style={{ borderColor: GOLD_LIGHT, background: IVORY2 }}>
+                        <div className="rounded-2xl border overflow-hidden" style={{ borderColor: GOLD_LIGHT, background: IVORY2 }}>
                             {passkeys.length === 0 ? (
                                 <div className="py-8 px-5 text-center">
                                     <p className="text-[10px] font-sans font-bold uppercase tracking-[0.2em]" style={{ color: BROWN_LIGHT }}>No passkeys registered</p>
@@ -604,21 +599,21 @@ const MyAccount = () => {
                 </Card>
 
                 {/* ── Sign Out Section ── */}
-                <Card className="border overflow-hidden transition-all duration-300 rounded-2xl" style={{ ...cardStyle, borderColor: 'rgba(192,57,43,0.15)', background: 'rgba(192,57,43,0.02)' }}>
+                <Card className="border overflow-hidden transition-all duration-300 rounded-3xl bg-red-50 border-red-200">
                     <CardContent className="px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center">
                                 <LogOut className="w-5 h-5 text-rose-500" />
                             </div>
                             <div className="space-y-0.5">
-                                <h3 className="text-xl font-bold tracking-tight" style={{ color: BROWN }}>System Termination</h3>
+                                <h3 className="text-xl font-bold tracking-tight" style={{ color: BROWN }}>LOG OUT</h3>
                                 <p className="text-xs font-sans font-bold uppercase tracking-widest text-rose-400">End Session Persistence</p>
                             </div>
                         </div>
                         <Button
                             variant="destructive"
                             onClick={handleSignOut}
-                            className="rounded-md px-10 h-11 font-sans font-bold uppercase text-xs tracking-widest hover:opacity-90 active:scale-95 transition-all w-full md:w-auto"
+                            className="rounded-3xl px-10 h-11 font-sans font-bold uppercase text-xs tracking-widest hover:opacity-90 active:scale-95 transition-all w-full md:w-auto"
                         >
                             Terminate Connection
                         </Button>
@@ -632,7 +627,7 @@ const MyAccount = () => {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em]" style={{ color: BROWN_LIGHT }}>Node V10 • Protocol Optimized</span>
+                        <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em]" style={{ color: BROWN_LIGHT }}>Node V12 • A Eagle Labs Product</span>
                     </div>
                 </div>
             </div>
