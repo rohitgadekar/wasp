@@ -599,7 +599,7 @@ const MyAccount = () => {
                 </Card>
 
                 {/* ── Sign Out Section ── */}
-                <Card className="border overflow-hidden transition-all duration-300 rounded-3xl bg-red-50 border-red-200">
+                <Card className="border overflow-hidden transition-all duration-300 rounded-3xl" style={cardStyle}>
                     <CardContent className="px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
                             <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center">
