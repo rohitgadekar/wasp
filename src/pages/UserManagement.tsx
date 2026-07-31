@@ -776,7 +776,7 @@ const UserManagement = () => {
                                   variant="outline"
                                   onClick={() => handleBanToggle(mappedUser)}
                                   disabled={banToggleLoading === mappedUser.id}
-                                  className={`h-9 rounded-md px-3 text-[10px] font-bold uppercase tracking-wide transition-colors ${mappedUser.is_banned
+                                  className={`h-9 rounded-xl px-3 text-[10px] font-bold uppercase tracking-wide transition-colors ${mappedUser.is_banned
                                     ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800'
                                     : 'border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700'
                                     }`}
@@ -812,7 +812,7 @@ const UserManagement = () => {
                                   setIsDeleteDialogOpen(true);
                                 }}
                                 disabled={!canDeleteUser(mappedUser)}
-                                className="w-9 h-9 rounded-md  transition-all hover:scale-105 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                className="w-9 h-9 rounded-xl  transition-all hover:scale-105 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                 style={{ color: '#C0392B' }}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
