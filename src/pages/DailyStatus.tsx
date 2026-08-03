@@ -1656,7 +1656,7 @@ const DailyStatus = () => {
                         </div> */}
                         <CardHeader className="relative z-10 p-8 pb-4 flex flex-row items-center justify-between gap-4">
                             <div className="space-y-1">
-                                <CardTitle className="text-2xl font-bold text-[#2C241B]">Upcoming Leaves</CardTitle>
+                                <CardTitle className="text-2xl font-bold text-[#2C241B]">Upcoming Leaves & Holidays</CardTitle>
                                 <p className="text-sm font-inter text-[#8C7654]">
                                     Timeline for the next {UPCOMING_HORIZON_DAYS} days
                                 </p>
