@@ -11,6 +11,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import ChatMessage, { Message } from '@/components/ai-agent/ChatMessage';
 import ChatInput from '@/components/ai-agent/ChatInput';
 import { cn } from '@/lib/utils';
+import { RiChatAiFill } from 'react-icons/ri';
+import { TbFileShredder } from 'react-icons/tb';
 
 interface ChatSession {
   id: string;
@@ -25,7 +27,7 @@ const AiAgent = () => {
     {
       id: 'init',
       role: 'assistant',
-      content: `Hey, I'm Nyra. What are we building, fixing, or optimizing today?`,
+      content: `What are we building, fixing, or optimizing today?`,
       timestamp: new Date()
     }
   ]);
@@ -143,7 +145,7 @@ const AiAgent = () => {
         {
           id: 'init',
           role: 'assistant',
-          content: `Hey, I'm Nyra. What are we building, fixing, or optimizing today?`,
+          content: `What are we building, fixing, or optimizing today?`,
           timestamp: new Date(history[0]?.timestamp.getTime() - 1000)
         },
         ...history
@@ -209,7 +211,7 @@ const AiAgent = () => {
     setMessages([{
       id: 'init',
       role: 'assistant',
-      content: `Hey, I'm Nyra. What are we building, fixing, or optimizing today?`,
+      content: `What are we building, fixing, or optimizing today?`,
       timestamp: new Date()
     }]);
   };
@@ -423,16 +425,16 @@ const AiAgent = () => {
     <div className="fixed inset-x-0 bottom-0 z-40 flex   overflow-hidden" style={{ top: '7rem' }}>
       {/* Sidebar */}
       <div className={cn(
-        "flex-shrink-0 flex flex-col border-r border-[#E5DCCB] backdrop-blur-xl transition-all duration-300 ease-out overflow-hidden",
+        "flex-shrink-0 flex flex-col border-r border-[#E5DCCB]/30 bg-transparent backdrop-blur-xl transition-all duration-300 ease-out overflow-hidden",
         sidebarOpen ? "w-64" : "w-0"
       )}>
         <div className="flex flex-col h-full p-4 min-h-0">
           {/* New Chat Button */}
           <Button
             onClick={handleNewChat}
-            className="w-full rounded-2xl mb-4 flex-shrink-0 bg-gradient-to-br from-[#E2D4BF] via-[#BFA378] to-[#997C53] hover:opacity-90 text-white shadow-lg transition-all duration-300 h-12"
+            className="w-full rounded-[2em] mb-4 flex-shrink-0 bg-[#2C241B]/80 hover:opacity-90 text-white shadow-lg transition-all duration-300 h-12"
           >
-            <MessageSquarePlus className="w-5 h-5 mr-2" />
+            <RiChatAiFill className="w-5 h-5 mr-1" />
             New Chat
           </Button>
 
@@ -454,30 +456,30 @@ const AiAgent = () => {
                   key={session.id}
                   onClick={() => loadSession(session.id)}
                   className={cn(
-                    "group relative p-3.5 rounded-xl cursor-pointer transition-all duration-200 border hover:border-[#C5A880] hover:bg-[#FAF8F5] dark:hover:bg-zinc-800",
+                    "group relative p-2 pl-3 rounded-2xl cursor-pointer transition-all duration-200",
                     currentSessionId === session.id
-                      ? "bg-[#FAF8F5] dark:bg-zinc-800 border-[#C5A880] shadow-sm"
+                      ? "bg-[#E4DCD3]  shadow-sm"
                       : "bg-transparent border-transparent"
                   )}
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-[13px] font-bold text-[#2C241B] dark:text-white truncate mb-0.5 capitalize">
+                      <h4 className="text-[13px] font-sans text-[#2C241B] dark:text-white truncate  capitalize">
                         {session.title}
                       </h4>
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 mt-1">
+                      {/* <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 mt-1">
                         <Clock className="w-3 h-3 shrink-0" />
                         <span>{formatDate(session.timestamp)}</span>
                         <span className="ml-auto shrink-0">{session.messageCount} msgs</span>
-                      </div>
+                      </div> */}
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 shrink-0 mt-0.5"
+                      className="opacity-0 group-hover:bg-transparent group-hover:text-black group-hover:opacity-100 transition-opacity h-7 w-7 rounded-full shrink-0 mt-0.5"
                       onClick={(e) => handleDeleteSession(session.id, e)}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <TbFileShredder className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </div>
@@ -488,7 +490,7 @@ const AiAgent = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
+      <div className="flex-1 flex flex-col  min-h-0 relative overflow-hidden">
         {/* Dynamic Background Elements */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
@@ -500,7 +502,7 @@ const AiAgent = () => {
           variant="ghost"
           size="icon"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute top-3 left-3 z-50 rounded-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-[#E5DCCB] hover:bg-white dark:hover:bg-zinc-900 shadow-sm"
+          className="absolute top-3 left-3 z-50 rounded-full backdrop-blur-md"
         >
           {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </Button>
@@ -512,18 +514,15 @@ const AiAgent = () => {
           <div className="flex-1 overflow-y-auto px-4 md:px-8 lg:px-32 xl:px-48 pb-40 pt-6 custom-scrollbar">
             {messages.length === 1 && messages[0].id === 'init' && (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-8 -mt-20">
-                <Badge className="bg-foreground/5 text-foreground/60 border border-foreground/10 rounded-full px-4 py-1 uppercase tracking-[0.3em] text-[10px] font-medium inline-flex items-center gap-2 backdrop-blur-sm">
-                  Neural Link Active
-                </Badge>
-                <h1 className="text-6xl md:text-8xl font-heading font-bold tracking-tight text-center leading-[1.1]">
-                  <span className="block luxury-heading opacity-60 text-5xl md:text-6xl mb-4">{getGreeting()},</span>
-                  <span className="bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60 font-serif italic">
+                <h1 className="text-6xl md:text-6xl font-medium tracking-tight text-center leading-[1.1]">
+                  <span className="block  opacity-60 text-5xl md:text-6xl mb-4">{getGreeting()},</span>
+                  <span className="bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60 font-sans">
                     {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
                   </span>
                 </h1>
-                <p className="text-muted-foreground text-lg md:text-xl max-w-lg mx-auto font-light leading-relaxed">
+                {/* <p className="text-muted-foreground text-lg md:text-xl max-w-lg mx-auto font-light leading-relaxed">
                   How can I assist your engineering workflow today?
-                </p>
+                </p> */}
               </div>
             )}
 

@@ -35,7 +35,7 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
   return (
     <div
       className={cn(
-        "flex w-full mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both",
+        "flex max-w-4xl mx-auto w-full mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both",
         message.role === 'user' ? "justify-end" : "justify-start"
       )}
     >
@@ -44,23 +44,23 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
         message.role === 'user' ? "flex-row-reverse" : "flex-row"
       )}>
         {/* Avatar with status indicator */}
-        <div className="relative shrink-0 flex flex-col justify-end mb-2">
+        {/* <div className="relative shrink-0 flex flex-col justify-end mb-2">
           <div className={cn(
             "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-2xl  group-hover:scale-110 group-hover:rotate-3",
             message.role === 'user'
-              ? "bg-[#BFA378] text-primary-foreground"
+              ? "bg-[#2C241B] text-primary-foreground"
               : "bg-white dark:bg-zinc-900 border border-white/20"
           )}>
             {message.role === 'user' ? (
               <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-white">You</span>
             ) : (
-                    <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
+              <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
             )}
           </div>
           {message.role === 'assistant' && (
             <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-background shadow-lg shadow-emerald-500/50" />
           )}
-        </div>
+        </div> */}
 
         <div className={cn(
           "flex flex-col gap-2 min-w-0",
@@ -68,14 +68,14 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
         )}>
           {/* Metadata */}
           <div className={cn(
-            "flex items-center gap-2 px-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-2xl",
+            "flex items-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-opacity shadow-2xl",
             message.role === 'user' ? "flex-row-reverse" : "flex-row"
           )}>
-            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-foreground/60">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60">
               {message.role === 'user' ? 'Me' : 'Nyra'}
             </span>
             <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-            <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
+            <span className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-tighter">
               {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
             <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
@@ -90,9 +90,9 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
 
           {/* Message Bubble */}
           <div className={cn(
-            "relative group/bubble px-6 py-4 rounded-[1em] text-[15.5px] leading-relaxed shadow-2xl backdrop-blur-2xl break-words w-full select-text cursor-auto",
+            "relative group/bubble px-6 py-4 rounded-[2em] text-[15.5px] leading-relaxed shadow-2xl backdrop-blur-2xl break-words w-full select-text cursor-auto",
             message.role === 'user'
-              ? "bg-[#BFA378] text-primary-foreground shadow-primary/20"
+              ? "bg-[#2C241B]/80 text-primary-foreground shadow-primary/20"
               : "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-3xl border border-black/5 dark:border-white/5 text-foreground shadow-black/5 dark:shadow-black/20"
           )}>
             <div className="prose prose-sm dark:prose-invert max-w-none break-words select-text cursor-text">
@@ -163,7 +163,7 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
                       );
                     }
                     return (
-                      <code {...props} className={cn("bg-black/5 dark:bg-white/10 text-primary border border-black/5 dark:border-white/10 rounded-lg px-1.5 py-0.5 font-mono text-sm font-semibold", className)}>
+                      <code {...props} className={cn("bg-black/5 dark:bg-white/10  border border-black/5 dark:border-white/10 rounded-lg px-1.5 py-0.5 font-mono text-sm font-semibold", className)}>
                         {children}
                       </code>
                     );
