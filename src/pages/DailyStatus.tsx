@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarWithDots } from '@/components/ui/custom-calendar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar } from 'recharts';
-import { Download, FileSpreadsheet, Image, Share2, Plus, Trash2, Mail, TrendingUp } from 'lucide-react';
+import { Download, FileSpreadsheet, Image, Share2, Plus, Trash2, Mail, TrendingUp, FileDown } from 'lucide-react';
 import { SiChinaeasternairlines } from "react-icons/si";
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -818,28 +818,28 @@ const DailyStatus = () => {
 
             {/* Floating Actions Hub */}
             {isSuperUser && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-2 bg-[#FDFDFB]/95 backdrop-blur-2xl px-6 py-3 rounded-full border border-[#E5DCCB] shadow-[0_20px_50px_rgba(197,168,128,0.15)] animate-in slide-in-from-bottom-8 duration-700">
-                    <Button variant="ghost" className="rounded-full px-4 h-10 font-sans font-bold text-xs uppercase tracking-wider text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={exportToPDF}>
-                        <Download className="w-4 h-4 mr-2 text-[#C5A880]" /> PDF
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-2 backdrop-blur-2xl px-2 py-2 rounded-full shadow-[0_20px_50px_rgba(197,168,128,0.15)] animate-in slide-in-from-bottom-8 duration-700">
+                    <Button variant="ghost" className="rounded-full px-4 h-10 font-sans font-bold text-[9px] uppercase tracking-wider text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={exportToPDF}>
+                        <FileDown className="w-2 h-2 mr-2 text-[#C5A880]" /> PDF
                     </Button>
                     <div className="w-px h-5 bg-[#E5DCCB] mx-1" />
-                    <Button variant="ghost" className="rounded-full px-4 h-10 font-sans font-bold text-xs uppercase tracking-wider text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={exportToPNG}>
-                        <Image className="w-4 h-4 mr-2 text-[#C5A880]" /> PNG
+                    <Button variant="ghost" className="rounded-full px-4 h-10 font-sans font-bold text-[9px] uppercase tracking-wider text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={exportToPNG}>
+                        <Image className="w-2 h-2 mr-2 text-[#C5A880]" /> PNG
                     </Button>
                     <div className="w-px h-5 bg-[#E5DCCB] mx-1" />
-                    <Button variant="ghost" className="rounded-full px-4 h-10 font-sans font-bold text-xs uppercase tracking-wider text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={exportToExcel}>
-                        <FileSpreadsheet className="w-4 h-4 mr-2 text-[#C5A880]" /> Excel
+                    <Button variant="ghost" className="rounded-full px-4 h-10 font-sans font-bold text-[9px] uppercase tracking-wider text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={exportToExcel}>
+                        <FileSpreadsheet className="w-2 h-2 mr-2 text-[#C5A880]" /> Excel
                     </Button>
                     <div className="w-px h-5 bg-[#E5DCCB] mx-1" />
-                    <Button className="rounded-full px-6 h-10 font-sans font-bold text-xs uppercase tracking-wider bg-[#2C241B] hover:bg-[#38322D] text-[#EFEAE2] shadow-md transition-all hover:scale-105 active:scale-95" onClick={sendEmailStatus}>
-                        <Mail className="w-4 h-4 mr-2 text-[#C5A880]" /> Mail
+                    <Button className="rounded-full px-6 h-10 font-sans font-bold text-[9px] uppercase tracking-wider bg-[#2C241B] hover:bg-[#38322D] text-[#EFEAE2] shadow-md transition-all hover:scale-102 active:scale-95" onClick={sendEmailStatus}>
+                        <Mail className="w-2 h-2 mr-2 text-[#C5A880]" /> Mail
                     </Button>
-                    <Button variant="outline" className="rounded-full px-6 h-10 font-sans font-bold text-xs uppercase tracking-wider border-[#E5DCCB] text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={() => {
+                    <Button variant="outline" className="rounded-full px-6 h-10 font-sans font-bold text-[9px] uppercase tracking-wider border-[#E5DCCB] text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={() => {
                         const url = `${window.location.origin}${window.location.pathname}?date=${dateStr}`;
                         navigator.clipboard.writeText(url);
                         toast({ title: 'Share link copied to clipboard!' });
                     }}>
-                        <Share2 className="w-4 h-4 mr-2 text-[#C5A880]" /> Share
+                        <Share2 className="w-2 h-2 mr-2 text-[#C5A880]" /> Share
                     </Button>
                 </div>
             )}

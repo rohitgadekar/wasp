@@ -113,7 +113,7 @@ const UserManagement = () => {
       if (error) throw error;
       return data as UserProfile[];
     },
-    enabled: !!userRole && (userRole === 'moderator' || userRole === 'owner'),
+    enabled: !!userRole && (userRole === 'moderator' || userRole === 'owner' || userRole === 'manager'),
   });
 
   // Fetch hive access map for all users (all authenticated users can read via RLS)
