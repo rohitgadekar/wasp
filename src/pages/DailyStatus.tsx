@@ -1701,14 +1701,14 @@ const DailyStatus = () => {
                                                     return (
                                                         <div
                                                             key={event.id}
-                                                            className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
+                                                            className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10 shadow-lg"
                                                         >
 
                                                             <p className="font-inter text-sm font-semibold text-[#2C241B]">
-                                                                {'Company Holiday'}
+                                                                {'Company Off'}
                                                             </p>
                                                             <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
-                                                                PTO
+                                                                Declared Holiday
                                                             </Badge>
                                                         </div>
                                                     );
@@ -1717,15 +1717,13 @@ const DailyStatus = () => {
                                                 return (
                                                     <div
                                                         key={event.id}
-                                                        className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10"
+                                                        className="inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-[#E5DCCB]/30 bg-[#FAF9F5] px-3.5 py-2.5 transition-colors hover:bg-[#C5A880]/10 shadow-lg"
                                                     >
                                                         <p className="truncate font-inter text-sm font-semibold text-[#2C241B]">
                                                             {event.leave.profiles?.full_name || 'Team member'}
 
                                                         </p>
-                                                        <span className="text-[7px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">
-                                                            X{event.leave.user_id.split("-")[0]}
-                                                        </span>
+
                                                         <div className="flex flex-shrink-0 flex-row items-center justify-center gap-2">
 
                                                             <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
@@ -1750,7 +1748,7 @@ const DailyStatus = () => {
 
                                                     {/* Center date marker */}
                                                     <div className="relative z-10 flex flex-shrink-0 flex-col items-center">
-                                                        <div className="flex h-14 w-12 flex-col items-center justify-center rounded-2xl border border-[#E5DCCB]/40 bg-[#FAF9F5] shadow-sm">
+                                                        <div className="flex h-14 w-12 flex-col items-center justify-center rounded-2xl border border-[#E5DCCB]/40 bg-[#FAF9F5] shadow-lg">
                                                             <span className="text-[8px] font-sans font-bold uppercase tracking-wider text-[#C5A880]">
                                                                 {formatScheduleDay(group.date)}
                                                             </span>
