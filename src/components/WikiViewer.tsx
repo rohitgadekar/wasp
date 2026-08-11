@@ -37,14 +37,21 @@ const WikiPageViewer = () => {
 
         const fetchPage = async () => {
             setLoading(true);
-            const { data, error: fetchError } = await supabase
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+            let query = supabase
                 .from('wiki_pages')
                 .select(`
                     *,
                     profiles (email, full_name, avatar)
-                `)
-                .eq('id', id)
-                .single();
+                `);
+
+            if (isUuid) {
+                query = query.eq('id', id);
+            } else {
+                query = query.eq('title', decodeURIComponent(id));
+            }
+
+            const { data, error: fetchError } = await query.limit(1).maybeSingle();
 
             if (fetchError || !data) {
                 setError(true);

@@ -225,8 +225,8 @@ const Wiki = () => {
         return isSuperUser || page.user_id === user?.id;
     };
 
-    const handleShare = (pageId: string) => {
-        const shareUrl = `${window.location.origin}/w/${pageId}`;
+    const handleShare = (pageTitle: string) => {
+        const shareUrl = `${window.location.origin}/w/${encodeURIComponent(pageTitle)}`;
         navigator.clipboard.writeText(shareUrl);
         toast({ title: 'Share link copied to clipboard!' });
     };
@@ -532,7 +532,7 @@ const Wiki = () => {
                                                 size="icon"
                                                 variant="ghost"
                                                 className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]"
-                                                onClick={() => handleShare(page.id)}
+                                                onClick={() => handleShare(page.title)}
                                             >
                                                 <Share2 className="h-4 w-4" />
                                             </Button>

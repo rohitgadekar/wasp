@@ -431,7 +431,7 @@ const CodeLibrary = () => {
   };
 
   const handleShare = async (snippet: CodeSnippet) => {
-    await navigator.clipboard.writeText(`${window.location.origin}/s/${snippet.id}`);
+    await navigator.clipboard.writeText(`${window.location.origin}/s/${encodeURIComponent(snippet.title)}`);
     toast({ title: 'Share link copied!' });
   };
 

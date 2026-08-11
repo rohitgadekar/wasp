@@ -140,8 +140,8 @@ const Scripts = () => {
 
     const resetForm = () => { setFormData({ title: '', content: '' }); setEditingScript(null); };
     const canEdit = (script: Script) => isSuperUser || script.user_id === user?.id;
-    const handleShare = (scriptId: string) => {
-        navigator.clipboard.writeText(`${window.location.origin}/script/${scriptId}`);
+    const handleShare = (scriptTitle: string) => {
+        navigator.clipboard.writeText(`${window.location.origin}/script/${encodeURIComponent(scriptTitle)}`);
         toast({ title: 'Share link copied to clipboard!' });
     };
 
@@ -317,7 +317,7 @@ const Scripts = () => {
                                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <Button size="icon" variant="ghost"
                                                 className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]"
-                                                onClick={() => handleShare(script.id)}>
+                                                onClick={() => handleShare(script.title)}>
                                                 <Share2 className="h-4 w-4" />
                                             </Button>
                                             {canEdit(script) && (
