@@ -2,12 +2,37 @@
   "functions": {
     "api/snippet.ts": {
       "includeFiles": "dist/index.html"
+    },
+    "api/script.ts": {
+      "includeFiles": "dist/index.html"
+    },
+    "api/wiki.ts": {
+      "includeFiles": "dist/index.html"
+    },
+    "api/status.ts": {
+      "includeFiles": "dist/index.html"
     }
   },
   "rewrites": [
     {
       "source": "/s/:id",
       "destination": "/api/snippet?id=:id"
+    },
+    {
+      "source": "/script/:id",
+      "destination": "/api/script?id=:id"
+    },
+    {
+      "source": "/w/:id",
+      "destination": "/api/wiki?id=:id"
+    },
+    {
+      "source": "/p/status",
+      "destination": "/api/status"
+    },
+    {
+      "source": "/status",
+      "destination": "/api/status"
     },
     {
       "source": "/(.*)",
