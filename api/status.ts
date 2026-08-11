@@ -14,7 +14,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const dateTitle = `Logs - ${format(selectedDate, 'EEEE do, yyyy')}`;
-  const description = "Wasp Analytics";
+  const description = "SE Mappers · PUNE";
 
   // Read index.html from dist (production) or root (development fallback)
   let htmlPath = path.join(process.cwd(), 'dist', 'index.html');
@@ -33,7 +33,7 @@ export default async function handler(req: any, res: any) {
     const params = new URLSearchParams();
     if (dateTitle) params.set('title', dateTitle);
     if (description) params.set('description', description);
-    
+
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const host = req.headers.host || 'localhost';
     const origin = `${protocol}://${host}`;
@@ -42,19 +42,19 @@ export default async function handler(req: any, res: any) {
 
     // Replace <title>
     html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapedTitle} • Wasp</title>`);
-    
+
     // Replace description meta tag
     if (html.includes('name="description"')) {
       html = html.replace(/(<meta name="description" content=")([^"]*)(")/, `$1${escapedDescription}$3`);
     }
-    
+
     // Replace og:title meta tag
     if (html.includes('property="og:title"')) {
       html = html.replace(/(<meta property="og:title" content=")([^"]*)(")/, `$1${escapedTitle} • Wasp$3`);
     } else {
       html = html.replace('</head>', `<meta property="og:title" content="${escapedTitle} • Wasp" />\n</head>`);
     }
-    
+
     // Replace og:description meta tag
     if (html.includes('property="og:description"')) {
       html = html.replace(/(<meta property="og:description" content=")([^"]*)(")/, `$1${escapedDescription}$3`);
