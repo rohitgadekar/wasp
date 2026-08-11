@@ -1,5 +1,14 @@
 {
+  "functions": {
+    "api/snippet.ts": {
+      "includeFiles": "dist/index.html"
+    }
+  },
   "rewrites": [
+    {
+      "source": "/s/:id",
+      "destination": "/api/snippet?id=:id"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
