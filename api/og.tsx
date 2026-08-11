@@ -21,9 +21,9 @@ export default async function handler(request: Request) {
                         flexDirection: 'column',
                         alignItems: 'flex-start',
                         justifyContent: 'center',
-                        backgroundColor: '#0f172a',
+                        backgroundColor: '#E2D4BF',
                         padding: '60px 80px',
-                        color: 'white',
+                        color: 'black',
                         fontFamily: 'system-ui, sans-serif',
                     }}
                 >
@@ -31,7 +31,6 @@ export default async function handler(request: Request) {
                         style={{
                             fontSize: 28,
                             fontWeight: 600,
-                            color: '#94a3b8',
                             marginBottom: 40,
                         }}
                     >
@@ -40,10 +39,10 @@ export default async function handler(request: Request) {
 
                     <div
                         style={{
-                            fontSize: title.length > 40 ? 48 : 64,
+                            fontSize: 64,
                             fontWeight: 700,
                             lineHeight: 1.2,
-                            marginBottom: description ? 24 : 0,
+                            marginBottom: 0,
                         }}
                     >
                         {title}
@@ -53,7 +52,6 @@ export default async function handler(request: Request) {
                         <div
                             style={{
                                 fontSize: 28,
-                                color: '#94a3b8',
                                 lineHeight: 1.4,
                                 maxWidth: '90%',
                             }}
