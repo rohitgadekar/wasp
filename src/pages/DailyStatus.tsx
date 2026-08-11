@@ -835,7 +835,7 @@ const DailyStatus = () => {
                         <Mail className="w-2 h-2 mr-2 text-[#C5A880]" /> Mail
                     </Button>
                     <Button variant="outline" className="rounded-full px-6 h-10 font-sans font-bold text-[9px] uppercase tracking-wider border-[#E5DCCB] text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={() => {
-                        const url = `${window.location.origin}${window.location.pathname}?date=${dateStr}`;
+                        const url = `${window.location.origin}/p${window.location.pathname}?date=${dateStr}`;
                         navigator.clipboard.writeText(url);
                         toast({ title: 'Share link copied to clipboard!' });
                     }}>
