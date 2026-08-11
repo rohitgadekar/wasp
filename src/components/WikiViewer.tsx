@@ -30,7 +30,7 @@ const WikiPageViewer = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    useTitle(page?.title || 'Wiki & Documentation', page?.category);
+    useTitle(page?.title || 'Wiki & Documentation', "Wikipedia");
 
     useEffect(() => {
         if (!id) return;
