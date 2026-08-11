@@ -329,21 +329,93 @@ const CodeLibrary = () => {
     queryFn: async () => {
       let q = supabase
         .from('code_snippets')
-        .select(`*, profiles (email, full_name, avatar)`, { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
-
-      if (searchQuery) {
-        q = q.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-      }
+        .select(`*, profiles (email, full_name, avatar)`, { count: 'exact' });
 
       if (selectedAuthor !== 'all') {
         q = q.eq('author_id', selectedAuthor);
       }
 
-      const { data, count, error } = await q;
-      if (error) throw error;
-      return { data: data as CodeSnippet[], count: count || 0 };
+      if (searchQuery) {
+        // Query to match any of the words or contiguous string
+        q = q.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+
+        const { data, error } = await q;
+        if (error) throw error;
+
+        let processedData = data as CodeSnippet[];
+
+        const queryLower = searchQuery.toLowerCase();
+        const queryWords = queryLower.split(/\s+/).filter(Boolean);
+
+        processedData.sort((a, b) => {
+          const aTitle = a.title.toLowerCase();
+          const bTitle = b.title.toLowerCase();
+          const aDesc = (a.description || '').toLowerCase();
+          const bDesc = (b.description || '').toLowerCase();
+
+          const getRelevance = (title: string, desc: string) => {
+            let score = 0;
+
+            // 1. Check exact/prefix match on the full query
+            if (title === queryLower) {
+              score += 200;
+            } else if (title.startsWith(queryLower)) {
+              score += 150;
+            } else if (title.includes(queryLower)) {
+              score += 100 - title.indexOf(queryLower);
+            }
+
+            if (desc.includes(queryLower)) {
+              score += 50 - desc.indexOf(queryLower);
+            }
+
+            // 2. Check individual word matches
+            let matchedWordsCount = 0;
+            for (const word of queryWords) {
+              if (title.includes(word)) {
+                matchedWordsCount++;
+                score += 30;
+                if (title.startsWith(word)) score += 10;
+              } else if (desc.includes(word)) {
+                matchedWordsCount++;
+                score += 10;
+              }
+            }
+
+            // All words matched bonus
+            if (matchedWordsCount === queryWords.length) {
+              score += 50;
+            }
+
+            return score;
+          };
+
+          const scoreA = getRelevance(aTitle, aDesc);
+          const scoreB = getRelevance(bTitle, bDesc);
+
+          if (scoreA !== scoreB) {
+            return scoreB - scoreA;
+          }
+
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        const totalCount = processedData.length;
+        const paginatedData = processedData.slice(
+          (currentPage - 1) * PAGE_SIZE,
+          currentPage * PAGE_SIZE
+        );
+
+        return { data: paginatedData, count: totalCount };
+      } else {
+        q = q.order('created_at', { ascending: false })
+          .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+
+        const { data, count, error } = await q;
+        if (error) throw error;
+
+        return { data: data as CodeSnippet[], count: count || 0 };
+      }
     },
   });
 
@@ -526,7 +598,7 @@ const CodeLibrary = () => {
                 <p className="text-sm font-sans font-bold uppercase tracking-widest text-[#8C7654] mt-1">Library Overview</p>
                 <div className="h-px flex-1 bg-gradient-to-r from-[#E5DCCB] to-transparent" />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {/* Total Snippets */}
                 <Card className="bg-[#2C241B] rounded-3xl border-0 overflow-hidden group hover:shadow-xl transition-all duration-300">
                   <div className="p-6">
@@ -536,29 +608,7 @@ const CodeLibrary = () => {
                       </div>
                       <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#C5A880]/70">Total Snippets</span>
                     </div>
-                    <div className="text-4xl font-sans font-bold text-[#EFEAE2]">{totalCount}</div>
-                  </div>
-                </Card>
-
-                {/* Languages */}
-                <Card className="bg-[#FDFDFB] rounded-3xl border border-[#E5DCCB] overflow-hidden group hover:shadow-xl hover:border-[#C5A880]/50 transition-all duration-300">
-                  <div className="p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-[#C5A880]/10 flex items-center justify-center">
-                        <Cpu className="w-5 h-5 text-[#8C7654]" />
-                      </div>
-                      <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#A59582]">Languages</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {Array.from(new Set(snippets.map(s => s.language))).slice(0, 3).map(lang => (
-                        <Badge key={lang} className="bg-[#C5A880]/15 text-[#8C7654] border-none px-2.5 py-0.5 rounded-full text-[9px] font-sans font-bold tracking-wider uppercase">
-                          {lang}
-                        </Badge>
-                      ))}
-                      {Array.from(new Set(snippets.map(s => s.language))).length > 3 && (
-                        <span className="text-[10px] font-sans text-[#A59582]">+{Array.from(new Set(snippets.map(s => s.language))).length - 3}</span>
-                      )}
-                    </div>
+                    <div className="text-4xl font-sans font-bold text-[#EFEAE2]" >{totalCount}</div>
                   </div>
                 </Card>
 
@@ -572,7 +622,7 @@ const CodeLibrary = () => {
                       <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#A59582]">Contributors</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {contributorsData.slice(0, 4).map((contributor: any) => {
+                      {contributorsData.slice(0, 6).map((contributor: any) => {
                         const name = contributor?.profiles?.full_name || contributor?.profiles?.email?.split('@')[0] || 'Unknown';
                         return (
                           <Badge
@@ -583,7 +633,7 @@ const CodeLibrary = () => {
                           </Badge>
                         );
                       })}
-                      {contributorsData.length > 4 && (
+                      {contributorsData.length > 6 && (
                         <Badge className="bg-[#FAF9F5] text-[#A59582] border border-[#E5DCCB] px-2.5 py-0.5 rounded-full text-[9px] font-sans font-bold tracking-wider">
                           +{contributorsData.length - 4} more
                         </Badge>
