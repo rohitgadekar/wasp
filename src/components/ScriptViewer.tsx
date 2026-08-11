@@ -27,7 +27,7 @@ const ScriptViewer = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    useTitle(script?.title || 'Script Repo', `Contributor ·${script.profiles?.full_name}`);
+    useTitle(script?.title || 'Script Repo', "SCRIPT");
 
     useEffect(() => {
         if (!id) return;

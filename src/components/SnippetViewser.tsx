@@ -35,7 +35,7 @@ const SnippetViewer = () => {
   const [error, setError] = useState(false);
   const { toast } = useToast();
 
-  useTitle(snippet?.title, `Contributor ·${snippet.profiles?.full_name}`);
+  useTitle(snippet?.title, snippet?.description);
 
   useEffect(() => {
     if (!id) return;
