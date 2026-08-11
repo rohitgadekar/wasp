@@ -154,7 +154,7 @@ const StatusViewer = () => {
         }
     };
 
-    useTitle(`Logs - ${format(selectedDate, 'EEEE do, yyyy')}`, "Wasp Analytics");
+    useTitle(`Logs - ${format(selectedDate, 'EEEE do, yyyy')}`, "SE Mappers");
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const todayStr = format(new Date(), 'yyyy-MM-dd');
