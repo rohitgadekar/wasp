@@ -281,7 +281,7 @@ const DebouncedSearchBar = ({ value, onChange, onClear }: { value: string, onCha
     <div className="relative bg-[#FDFDFB] rounded-[2rem] border border-[#E5DCCB] shadow-[0_15px_30px_rgba(197,168,128,0.1)] transition-all duration-500 focus-within:border-[#C5A880] focus-within:shadow-[0_20px_40px_rgba(197,168,128,0.2)] overflow-hidden">
       <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-[#A59582] group-focus-within:text-[#C5A880] transition-colors z-10" />
       <Input
-        placeholder="Search code snippets..."
+        placeholder="Search entire codebase..."
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         className="bg-transparent pl-14 pr-14 h-16 text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 outline-none w-full font-sans text-[#2C241B] placeholder:text-[#A59582]/50"
@@ -336,8 +336,8 @@ const CodeLibrary = () => {
       }
 
       if (searchQuery) {
-        // Query to match any of the words or contiguous string
-        q = q.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+        // Query to match any of the words or contiguous string in title, description, or code content
+        q = q.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,code.ilike.%${searchQuery}%`);
 
         const { data, error } = await q;
         if (error) throw error;
@@ -352,8 +352,10 @@ const CodeLibrary = () => {
           const bTitle = b.title.toLowerCase();
           const aDesc = (a.description || '').toLowerCase();
           const bDesc = (b.description || '').toLowerCase();
+          const aCode = (a.code || '').toLowerCase();
+          const bCode = (b.code || '').toLowerCase();
 
-          const getRelevance = (title: string, desc: string) => {
+          const getRelevance = (title: string, desc: string, code: string, tags: string[]) => {
             let score = 0;
 
             // 1. Check exact/prefix match on the full query
@@ -369,16 +371,33 @@ const CodeLibrary = () => {
               score += 50 - desc.indexOf(queryLower);
             }
 
+            if (code.includes(queryLower)) {
+              score += 30 - code.indexOf(queryLower) / 100;
+            }
+
             // 2. Check individual word matches
             let matchedWordsCount = 0;
             for (const word of queryWords) {
+              let matched = false;
               if (title.includes(word)) {
-                matchedWordsCount++;
+                matched = true;
                 score += 30;
                 if (title.startsWith(word)) score += 10;
-              } else if (desc.includes(word)) {
-                matchedWordsCount++;
+              }
+              if (desc.includes(word)) {
+                matched = true;
                 score += 10;
+              }
+              if (code.includes(word)) {
+                matched = true;
+                score += 5;
+              }
+              if (tags.some(tag => tag.toLowerCase().includes(word))) {
+                matched = true;
+                score += 15;
+              }
+              if (matched) {
+                matchedWordsCount++;
               }
             }
 
@@ -390,8 +409,8 @@ const CodeLibrary = () => {
             return score;
           };
 
-          const scoreA = getRelevance(aTitle, aDesc);
-          const scoreB = getRelevance(bTitle, bDesc);
+          const scoreA = getRelevance(aTitle, aDesc, aCode, a.tags || []);
+          const scoreB = getRelevance(bTitle, bDesc, bCode, b.tags || []);
 
           if (scoreA !== scoreB) {
             return scoreB - scoreA;
@@ -514,7 +533,7 @@ const CodeLibrary = () => {
       <div className="relative space-y-16 mx-auto p-6 md:p-12 max-w-[1400px] py-20 z-10">
         <div className="text-center flex flex-col items-center justify-center space-y-8">
           <Badge className="bg-[#C5A880]/10 text-[#8C7654] border border-[#E5DCCB] rounded-full px-6 py-1.5 uppercase tracking-[0.3em] text-[10px] font-sans font-bold mx-auto block w-fit shadow-sm">
-            Code Repository
+            Code Repository | Deep Search
           </Badge>
         </div>
 
@@ -586,10 +605,10 @@ const CodeLibrary = () => {
           </Dialog>
         </div>
 
-        <div className="grid gap-8">
+        <div className="grid gap-8 w-full min-w-0">
           {loading ? (
             <div className="grid gap-6">
-              {[1, 2, 3].map((i) => <div key={i} className="h-64 rounded-3xl bg-[#E5DCCB]/20 animate-pulse border border-[#E5DCCB]/50" />)}
+              {[1, 2, 3].map((i) => <div key={i} className="h-64 rounded-[2.5rem] bg-[#E5DCCB]/20 animate-pulse border border-[#E5DCCB]/50" />)}
             </div>
           ) : !searchQuery && selectedAuthor === 'all' ? (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -676,7 +695,7 @@ const CodeLibrary = () => {
               </div>
             </div>
           ) : snippets.length === 0 ? (
-            <Card className="bg-[#FAF9F5] border border-dashed border-[#E5DCCB] rounded-[2rem] shadow-none">
+            <Card className="bg-[#FAF9F5] border border-dashed border-[#E5DCCB] rounded-[2.5rem] shadow-none">
               <CardContent className="py-24 text-center">
                 <div className="bg-[#C5A880]/10 border border-[#E5DCCB] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Search className="h-10 w-10 text-[#C5A880]" />
@@ -695,122 +714,132 @@ const CodeLibrary = () => {
               </CardContent>
             </Card>
           ) : (
-            snippets.map((snippet) => (
-              <Card key={snippet.id} className="bg-[#FDFDFB] rounded-[2.5rem] border-[#E5DCCB] hover:border-[#C5A880]/50 transition-all duration-500 hover:shadow-2xl hover:shadow-[#C5A880]/10 group overflow-hidden">
-                <CardHeader className="p-8 pb-4">
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none px-3.5 py-1 rounded-full text-[9px] font-sans font-bold tracking-[0.2em] uppercase">
+            <div className="space-y-6 w-full min-w-0">
+              {searchQuery && (
+                <div className="flex items-center gap-3 px-4  py-3 rounded-[2.5rem] bg-[#C5A880]/10 border border-[#C5A880]/20 animate-in fade-in duration-300 ">
+                  <div className="h-2 w-2 rounded-full bg-[#C5A880] animate-pulse" />
+                  <span className="text-xs font-sans font-bold uppercase tracking-widest text-[#8C7654]">
+                    {totalCount} matching snippets found
+                  </span>
+                </div>
+              )}
+              {snippets.map((snippet) => (
+                <Card key={snippet.id} className="w-full min-w-0 bg-[#FDFDFB] rounded-[2.5rem] border-[#E5DCCB] hover:border-[#C5A880]/50 transition-all duration-500 hover:shadow-2xl hover:shadow-[#C5A880]/10 group overflow-hidden">
+                  <CardHeader className="p-8 pb-4">
+                    <div className="flex items-start justify-between gap-6">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none px-3.5 py-1 rounded-full text-[9px] font-sans font-bold tracking-[0.2em] uppercase">
+                            {snippet.language}
+                          </Badge>
+                          <div className="h-1 w-1 rounded-full bg-[#E5DCCB]" />
+                          <span className="text-[10px] font-sans font-bold text-[#A59582] uppercase tracking-[0.15em]">
+                            {format(snippet.created_at, 'MMMM d, yyyy')}
+                          </span>
+                        </div>
+                        <CardTitle className="text-3xl md:text-4xl font-sans font-semibold  text-[#2C241B] mb-3 group-hover:text-[#94764D] transition-colors">
+                          {snippet.title}
+                        </CardTitle>
+                        {snippet.description && (
+                          <CardDescription className="text-lg font-sans text-[#7A6E5D] leading-relaxed line-clamp-2">
+                            {snippet.description}
+                          </CardDescription>
+                        )}
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <Button size="icon" variant="ghost" className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]" onClick={() => handleCopy(snippet.code)}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]" onClick={() => handleShare(snippet)}>
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                        {canEdit(snippet) && (
+                          <>
+                            <Button size="icon" variant="ghost" className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]" onClick={() => handleEdit(snippet)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C2B2B]/70 hover:bg-[#8C2B2B]/10 hover:text-[#8C2B2B]"
+                              onClick={() => handleDelete(snippet.id)}
+                              disabled={actionLoading === snippet.id}
+                            >
+                              {actionLoading === snippet.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-6">
+                      {snippet.tags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest border-[#E5DCCB] bg-[#FAF9F5] text-[#8C7654]">
+                          #{tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-8 pt-4">
+                    <div className="relative rounded-md overflow-hidden bg-white border border-[#E5DCCB]/60">
+                      <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Badge className="bg-[#FAF9F5]/80 backdrop-blur-md text-[#8C7654] border border-[#E5DCCB]/50 shadow-sm uppercase text-[8px] font-sans font-bold tracking-widest">
                           {snippet.language}
                         </Badge>
-                        <div className="h-1 w-1 rounded-full bg-[#E5DCCB]" />
-                        <span className="text-[10px] font-sans font-bold text-[#A59582] uppercase tracking-[0.15em]">
-                          {format(snippet.created_at, 'MMMM d, yyyy')}
-                        </span>
                       </div>
-                      <CardTitle className="text-3xl md:text-4xl font-sans font-semibold  text-[#2C241B] mb-3 group-hover:text-[#94764D] transition-colors">
-                        {snippet.title}
-                      </CardTitle>
-                      {snippet.description && (
-                        <CardDescription className="text-lg font-sans text-[#7A6E5D] leading-relaxed line-clamp-2">
-                          {snippet.description}
-                        </CardDescription>
-                      )}
+                      <SyntaxHighlighter
+                        language={snippet.language}
+                        style={oneLight}
+                        showLineNumbers
+                        wrapLines={true}
+                        wrapLongLines={true}
+                        customStyle={{
+                          margin: 0,
+                          padding: '1.5rem',
+                          fontSize: '0.875rem',
+                          background: 'transparent',
+                          maxHeight: '400px',
+                          overflowY: 'auto',
+                          overflowX: 'hidden',
+                        }}
+                      >
+                        {snippet.code}
+                      </SyntaxHighlighter>
                     </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <Button size="icon" variant="ghost" className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]" onClick={() => handleCopy(snippet.code)}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]" onClick={() => handleShare(snippet)}>
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                      {canEdit(snippet) && (
-                        <>
-                          <Button size="icon" variant="ghost" className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]" onClick={() => handleEdit(snippet)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="rounded-full h-11 w-11 bg-[#FAF9F5] border border-[#E5DCCB]/60 text-[#8C2B2B]/70 hover:bg-[#8C2B2B]/10 hover:text-[#8C2B2B]"
-                            onClick={() => handleDelete(snippet.id)}
-                            disabled={actionLoading === snippet.id}
-                          >
-                            {actionLoading === snippet.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                    <div className="mt-6 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#E2D4BF] to-[#997C53] flex items-center justify-center border border-[#F0E6D2] overflow-hidden p-[1px]">
+                          <div className="w-full h-full bg-[#FDFDFB] rounded-full overflow-hidden flex items-center justify-center">
+                            {snippet.profiles?.avatar ? (
+                              <img src={snippet.profiles.avatar} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
-                              <Trash2 className="h-4 w-4" />
+                              <CircleUser className="h-6 w-6 text-[#C5A880]" />
                             )}
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-6">
-                    {snippet.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest border-[#E5DCCB] bg-[#FAF9F5] text-[#8C7654]">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardHeader>
-                <CardContent className="p-8 pt-4">
-                  <div className="relative rounded-md overflow-hidden bg-white border border-[#E5DCCB]/60">
-                    <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Badge className="bg-[#FAF9F5]/80 backdrop-blur-md text-[#8C7654] border border-[#E5DCCB]/50 shadow-sm uppercase text-[8px] font-sans font-bold tracking-widest">
-                        {snippet.language}
-                      </Badge>
-                    </div>
-                    <SyntaxHighlighter
-                      language={snippet.language}
-                      style={oneLight}
-                      showLineNumbers
-                      wrapLines={true}
-                      wrapLongLines={true}
-                      customStyle={{
-                        margin: 0,
-                        padding: '1.5rem',
-                        fontSize: '0.875rem',
-                        background: 'transparent',
-                        maxHeight: '400px',
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                      }}
-                    >
-                      {snippet.code}
-                    </SyntaxHighlighter>
-                  </div>
-                  <div className="mt-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#E2D4BF] to-[#997C53] flex items-center justify-center border border-[#F0E6D2] overflow-hidden p-[1px]">
-                        <div className="w-full h-full bg-[#FDFDFB] rounded-full overflow-hidden flex items-center justify-center">
-                          {snippet.profiles?.avatar ? (
-                            <img src={snippet.profiles.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                          ) : (
-                            <CircleUser className="h-6 w-6 text-[#C5A880]" />
-                          )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-sans font-bold text-[#2C241B] tracking-wide">
+                            {snippet.profiles?.full_name || snippet.profiles?.email || 'Unknown Architect'}
+                          </span>
+                          <span className="text-[9px] font-sans font-bold text-[#A59582] uppercase tracking-[0.2em] mt-0.5">
+                            Contributor
+                          </span>
                         </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-sans font-bold text-[#2C241B] tracking-wide">
-                          {snippet.profiles?.full_name || snippet.profiles?.email || 'Unknown Architect'}
+                      {snippet.updated_at !== snippet.created_at && (
+                        <span className="text-[10px] font-sans font-bold text-[#A59582] uppercase tracking-widest flex items-center">
+                          <Diff className="h-3.5 w-3.5 mr-1.5 text-[#C5A880]" />
+                          Refined {format(snippet.updated_at, 'MMM d')}
                         </span>
-                        <span className="text-[9px] font-sans font-bold text-[#A59582] uppercase tracking-[0.2em] mt-0.5">
-                          Contributor
-                        </span>
-                      </div>
+                      )}
                     </div>
-                    {snippet.updated_at !== snippet.created_at && (
-                      <span className="text-[10px] font-sans font-bold text-[#A59582] uppercase tracking-widest flex items-center">
-                        <Diff className="h-3.5 w-3.5 mr-1.5 text-[#C5A880]" />
-                        Refined {format(snippet.updated_at, 'MMM d')}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
 
