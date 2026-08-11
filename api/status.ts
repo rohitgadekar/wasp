@@ -14,7 +14,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const dateTitle = `Logs - ${format(selectedDate, 'EEEE do, yyyy')}`;
-  const description = "SE Mappers · PUNE";
+  const description = "SE Mappers · Pune";
 
   // Read index.html from dist (production) or root (development fallback)
   let htmlPath = path.join(process.cwd(), 'dist', 'index.html');
