@@ -1454,7 +1454,7 @@ const StatusViewer = () => {
                                                             <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
                                                                 {event.leave.type || 'Leave'}
                                                             </Badge>
-                                                            {event.isActive && (
+                                                            {format(group.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') && (
                                                                 <span className="text-[7px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">
                                                                     |  TODAY
                                                                 </span>
