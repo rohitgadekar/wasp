@@ -28,6 +28,7 @@ import DocumentFinder from "./pages/DocumentFinder";
 import AiAgent from "./pages/AiAgent";
 import Hive from "./pages/Hive";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
+import ExportLogs from "./components/ExportLogs";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,12 +59,13 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/s/:id" element={<SnippetViewer />} />
+            <Route path="/api/logs" element={<ExportLogs />} />
             <Route path="/script/:id" element={<ScriptViewer />} />
             <Route path="/w/:id" element={<WikiPageViewer />} />
             <Route path="/p/status" element={<ProtectedRoute>
-                  <StatusViewer />
-              </ProtectedRoute>} />
-            
+              <StatusViewer />
+            </ProtectedRoute>} />
+
             <Route path="/csv-visualizer" element={
               <ProtectedRoute>
                 <Layout>
