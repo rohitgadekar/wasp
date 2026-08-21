@@ -626,9 +626,10 @@ const ExportLogs = () => {
         const canvas = await html2canvas(exportRef.current, {
             scale: 3,
             useCORS: true,
-            backgroundColor: '#f1f4f9',
+            backgroundColor: '#ffffff',
             onclone: (doc) => {
                 doc.querySelectorAll('[data-export-hide]').forEach(el => el.remove());
+
 
                 // Fix header visibility
                 const header = doc.querySelector('h1');
@@ -644,10 +645,19 @@ const ExportLogs = () => {
                     card.style.backdropFilter = 'none';
                     card.style.border = '1px solid #e2e8f0';
                 });
+
+                // const brandingEl = doc.createElement('div');
+                // brandingEl.innerHTML = `
+                //     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-family: sans-serif;">
+                //         <p style="font-size: 12px; color: #1e293b; font-weight: 800; letter-spacing: 0.1em; margin: 0;">GENERATED ON WASP</p>
+                //         <p style="font-size: 12px; color: #1e293b; font-weight: 800; margin: 0;">${format(new Date(), 'PPPP, p')}</p>
+                //     </div>
+                // `;
+                // doc.querySelector('.space-y-12')?.prepend(brandingEl);
             }
         });
         const link = document.createElement('a');
-        link.download = `Status-${dateStr}.png`;
+        link.download = `Logs-${dateStr}.png`;
         link.href = canvas.toDataURL();
         link.click();
     };
