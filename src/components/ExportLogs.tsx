@@ -747,13 +747,13 @@ const ExportLogs = () => {
                 ref={exportRef}
                 data-report-root
                 data-ready={allLoaded ? 'true' : 'false'}
-                style={!downloaded ? {
-                    position: 'absolute',
-                    left: '-9999px',
-                    top: 0,
-                    width: '1200px',
-                    backgroundColor: '#f1f4f9',
-                } : undefined}
+                // style={!downloaded ? {
+                //     position: 'absolute',
+                //     left: '-9999px',
+                //     top: 0,
+                //     width: '1200px',
+                //     backgroundColor: '#f1f4f9',
+                // } : undefined}
                 className={cn(
                     "relative z-10 transition-all duration-500",
                     downloaded && "relative min-h-screen bg-gradient-to-tr from-[#FAF9F5] via-[#FDFDFB] to-[#F3EEE3] p-6"
