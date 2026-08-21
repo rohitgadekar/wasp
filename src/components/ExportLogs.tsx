@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { renderToStaticMarkup } from "react-dom/server";
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarWithDots } from '@/components/ui/custom-calendar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar } from 'recharts';
-import { Download, FileSpreadsheet, Image, Share2, Plus, Trash2, Mail, Palmtree, TrendingUp, Home } from 'lucide-react';
+import { Download, FileSpreadsheet, Image, Share2, Plus, Trash2, Mail, TrendingUp, FileDown, Check } from 'lucide-react';
 import { SiChinaeasternairlines } from "react-icons/si";
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,6 +74,18 @@ interface UpcomingHoliday {
 
 const UPCOMING_HORIZON_DAYS = 30;
 
+const svg = renderToStaticMarkup(
+    <SiChinaeasternairlines
+        style={{
+            width: 224,
+            height: 224,
+            color: "#C5A880",
+            opacity: 0.09,
+        }}
+    />
+);
+
+
 const formatScheduleDay = (dateStr: string) => format(parseISO(dateStr), 'EEE');
 
 const formatScheduleDayNumber = (dateStr: string) => format(parseISO(dateStr), 'd');
@@ -110,52 +122,46 @@ const isValidCase = (link: string) => {
 };
 
 const ExportLogs = () => {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const { toast } = useToast();
+    const [searchParams] = useSearchParams();
     const { user } = useAuth();
-    const navigate = useNavigate();
-
-    // URL-first date management
-    const dateParam = searchParams.get('date');
-    const selectedDate = useMemo(() => {
-        if (dateParam) {
-            const parsed = parseISO(dateParam);
-            if (isValid(parsed)) return parsed;
-        }
-        return new Date();
-    }, [dateParam]);
-
-    const [viewDate, setViewDate] = useState<Date>(selectedDate);
-    const [trendRange, setTrendRange] = useState<'week' | 'month'>('week');
-
+    const { isSuperUser, role } = useUserRole();
     const exportRef = useRef<HTMLDivElement>(null);
     const [downloaded, setDownloaded] = useState(false);
 
-    // Keep viewDate (month view) in sync with selectedDate when it's updated via URL
+    const queryClient = useQueryClient();
+
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [viewDate, setViewDate] = useState<Date>(new Date());
+
+    // Form state — always present
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [newDevText, setNewDevText] = useState<string>('');
+    const [updateText, setUpdateText] = useState<string>('');
+    const [saving, setSaving] = useState(false);
+    const [trendRange, setTrendRange] = useState<'week' | 'month'>('week');
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [statusToDelete, setStatusToDelete] = useState<string | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
+    const { toast } = useToast();
+
+    useTitle(`Logs - ${format(selectedDate, 'EEEE do, yyyy')}`);
+
     useEffect(() => {
-        setViewDate(selectedDate);
-    }, [selectedDate]);
+        const dateParam = searchParams.get('date');
+        if (dateParam) {
+            const parsed = parseISO(dateParam);
+            if (isValid(parsed)) {
+                setSelectedDate(parsed);
+                setViewDate(parsed);
+            }
+        }
+    }, [searchParams]);
 
-    // Ensure date is in URL on initial load if missing
     useEffect(() => {
-        if (!dateParam) {
-            const dateStr = format(new Date(), 'yyyy-MM-dd');
-            setSearchParams({ date: dateStr }, { replace: true });
+        if (user && !selectedUserId) {
+            setSelectedUserId(user.id);
         }
-    }, [dateParam, setSearchParams]);
-
-    const handleDateSelect = (d: Date | undefined) => {
-        if (d) {
-            const dateStr = format(d, 'yyyy-MM-dd');
-            setSearchParams(prev => {
-                const next = new URLSearchParams(prev);
-                next.set('date', dateStr);
-                return next;
-            }, { replace: true });
-        }
-    };
-
-    useTitle(`Logs - ${format(selectedDate, 'EEEE do, yyyy')}`, "SE Mappers");
+    }, [user, selectedUserId]);
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -166,25 +172,26 @@ const ExportLogs = () => {
         'pankaj@apex.com',
         'tschellenberg@spscommerce.com',
         'amit.gilda@bristlecone.com',
-        'pankaj.patil@bristlecone.com'
+        'pankaj.patil@bristlecone.com',
+        'aditya.sanjay.dahe@bristlecone.com'
     ].map(e => e.toLowerCase()), []);
 
-    // Fetch daily task statuses
+    // Fetch task statuses with TanStack Query
     const { data: taskStatuses = [], isLoading: loadingTable } = useQuery({
-        queryKey: ['daily_task_status_viewer', dateStr],
+        queryKey: ['daily_task_status', dateStr],
         queryFn: async () => {
             const { data } = await supabase
                 .from('daily_task_status')
                 .select('*, profiles(full_name)')
                 .eq('date', dateStr)
                 .order('created_at', { ascending: false });
-            return (data as TaskStatus[]) || [];
+            return data as TaskStatus[];
         },
     });
 
     // Fetch month stats with TanStack Query
     const { data: monthStats = {}, isLoading: loadingChart } = useQuery({
-        queryKey: ['month_stats_viewer', viewDate.getFullYear(), viewDate.getMonth()],
+        queryKey: ['month_stats', viewDate.getFullYear(), viewDate.getMonth()],
         queryFn: async () => {
             // Fetch data from 30 days before the current month to ensure trend charts have previous month's data
             const start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
@@ -199,6 +206,7 @@ const ExportLogs = () => {
 
             const stats: Record<string, DayStats> = {};
             data?.forEach(item => {
+                // Skip if the user is in the excluded list
                 const email = (item.profiles as any)?.email?.toLowerCase();
                 if (email && EXCLUDED_EMAILS.includes(email)) return;
 
@@ -213,20 +221,20 @@ const ExportLogs = () => {
         },
     });
 
-    // Fetch profiles (with email for exclusion filtering)
+    // Fetch profiles
     const { data: allProfiles = [], isLoading: loadingProfiles } = useQuery({
-        queryKey: ['profiles_viewer'],
+        queryKey: ['profiles'],
         queryFn: async () => {
             const { data } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
             return data || [];
-        },
+        }
     });
 
-    // Memoized filtered task statuses — excludes specified emails globally
+    // Memoized filtered task statuses to use everywhere instead of raw taskStatuses
     const filteredTaskStatuses = useMemo(() => {
         const excludedIds = new Set(
             allProfiles
-                .filter(p => EXCLUDED_EMAILS.includes((p as any).email?.toLowerCase() || ''))
+                .filter(p => EXCLUDED_EMAILS.includes(p.email?.toLowerCase() || ''))
                 .map(p => p.id)
         );
         return taskStatuses.filter(status => !excludedIds.has(status.user_id));
@@ -247,16 +255,9 @@ const ExportLogs = () => {
         },
     });
 
-    const leaveTypeByUserId = useMemo(() => {
-        const map: Record<string, string> = {};
-        leavesForDate.forEach(leave => {
-            map[leave.user_id] = leave.type;
-        });
-        return map;
-    }, [leavesForDate]);
-
+    // Fetch upcoming leaves and holidays for quick overview
     const { data: upcomingLeaves = [], isLoading: loadingUpcomingLeaves } = useQuery({
-        queryKey: ['team_leaves_upcoming_viewer', todayStr],
+        queryKey: ['team_leaves_upcoming', todayStr],
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('team_leaves')
@@ -266,12 +267,12 @@ const ExportLogs = () => {
                 .order('start_date', { ascending: true });
 
             if (error) throw error;
-            return data as any;
+            return data as any[];
         },
     });
 
     const { data: upcomingHolidays = [], isLoading: loadingUpcomingHolidays } = useQuery({
-        queryKey: ['holidays_upcoming_viewer', todayStr],
+        queryKey: ['holidays_upcoming', todayStr],
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('holidays' as any)
@@ -288,7 +289,7 @@ const ExportLogs = () => {
     const filteredUpcomingLeaves = useMemo(() => {
         const excludedIds = new Set(
             allProfiles
-                .filter(p => EXCLUDED_EMAILS.includes((p as any).email?.toLowerCase() || ''))
+                .filter(p => EXCLUDED_EMAILS.includes(p.email?.toLowerCase() || ''))
                 .map(p => p.id)
         );
         return upcomingLeaves.filter(leave => !excludedIds.has(leave.user_id));
@@ -340,9 +341,17 @@ const ExportLogs = () => {
             .map(([date, events]) => ({ date, events }));
     }, [upcomingHolidays, filteredUpcomingLeaves, upcomingHorizonStr]);
 
-    // Fetch holidays for Viewer
+    const leaveTypeByUserId = useMemo(() => {
+        const map: Record<string, string> = {};
+        leavesForDate.forEach(leave => {
+            map[leave.user_id] = leave.type;
+        });
+        return map;
+    }, [leavesForDate]);
+
+    // Fetch holidays
     const { data: holidays = {} } = useQuery({
-        queryKey: ['holidays_viewer', viewDate.getFullYear(), viewDate.getMonth()],
+        queryKey: ['holidays', viewDate.getFullYear(), viewDate.getMonth()],
         queryFn: async () => {
             const start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
             const end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
@@ -358,17 +367,28 @@ const ExportLogs = () => {
         }
     });
 
-    // Calculations — use filteredTaskStatuses as the source of truth
+    const toggleHoliday = async () => {
+        const dStr = format(selectedDate, 'yyyy-MM-dd');
+        const isHoliday = !!holidays[dStr];
+
+        if (isHoliday) {
+            const { error } = await supabase.from('holidays' as any).delete().eq('date', dStr);
+            if (!error) toast({ title: "Holiday removed" });
+        } else {
+            const { error } = await supabase.from('holidays' as any).insert({ date: dStr, description: 'Holiday' });
+            if (!error) toast({ title: "Marked as Holiday" });
+        }
+        queryClient.invalidateQueries({ queryKey: ['holidays'] });
+    };
+
     const dayStats = useMemo(() => {
-        if (filteredTaskStatuses?.length > 0) {
+        if (filteredTaskStatuses.length > 0) {
             let newDevCount = 0;
             let updatesCount = 0;
-
-            filteredTaskStatuses.forEach(status => {
-                newDevCount += (status.new_dev || []).filter(isValidCase).length;
-                updatesCount += (status.updates || []).filter(isValidCase).length;
+            filteredTaskStatuses.forEach(s => {
+                newDevCount += (s.new_dev || []).filter(isValidCase).length;
+                updatesCount += (s.updates || []).filter(isValidCase).length;
             });
-
             return {
                 total: newDevCount + updatesCount,
                 new_dev: newDevCount,
@@ -377,7 +397,6 @@ const ExportLogs = () => {
         }
         return monthStats[dateStr] || { total: 0, new_dev: 0, updates: 0 };
     }, [filteredTaskStatuses, monthStats, dateStr]);
-
     const chartData = [{ name: format(selectedDate, 'MMM do, yyyy'), new_dev: dayStats.new_dev, updates: dayStats.updates, total: dayStats.total }];
 
     const individualData = useMemo(() => {
@@ -390,7 +409,7 @@ const ExportLogs = () => {
                     .some(l => l.toLowerCase().includes('leave'));
 
                 return {
-                    name: (status.profiles?.full_name || 'Anonymous').split(' ')[0],
+                    name: (status.profiles?.full_name || 'Anonymous').split(' ')[0], // Use first name for chart
                     fullName: status.profiles?.full_name || 'Anonymous',
                     new_dev: newDev,
                     updates: updates,
@@ -398,13 +417,13 @@ const ExportLogs = () => {
                     isLeave
                 };
             })
-            .filter(d => !d.isLeave)
+            .filter(d => !d.isLeave) // Do not show members who are on leave
             .sort((a, b) => b.total - a.total);
     }, [filteredTaskStatuses]);
 
     const distributionData = useMemo(() => [
-        { name: 'New Dev', value: dayStats.new_dev, color: '#C5A059' },
-        { name: 'Updates', value: dayStats.updates, color: '#8E7036' }
+        { name: 'NEW DEV', value: dayStats.new_dev, color: '#C5A880' }, // Premium Gold
+        { name: 'UPDATES', value: dayStats.updates, color: '#8C7654' }  // Burnished Bronze
     ].filter(d => d.value > 0), [dayStats]);
 
     const memberContributionData = useMemo(() => {
@@ -426,48 +445,15 @@ const ExportLogs = () => {
             .sort((a, b) => b.value - a.value);
     }, [filteredTaskStatuses]);
 
-    const separatedStatuses = useMemo(() => {
-        const active = [];
-        const onLeave = [];
-
-        filteredTaskStatuses.forEach(status => {
-            const isLeave = [...(status.new_dev || []), ...(status.updates || [])]
-                .some(l => l.toLowerCase().includes('leave'));
-            if (isLeave) onLeave.push(status);
-            else active.push(status);
-        });
-
-        return { active, onLeave };
-    }, [filteredTaskStatuses]);
-
-    const presenceStats = useMemo(() => {
-        const filteredTeam = allProfiles.filter(p => !EXCLUDED_EMAILS.includes((p as any).email?.toLowerCase() || ''));
-
-        const onLeave = filteredTaskStatuses.filter(status =>
-            [...(status.new_dev || []), ...(status.updates || [])]
-                .some(l => l.toLowerCase().includes('leave'))
-        ).length;
-
-        const totalReported = filteredTaskStatuses.length;
-        const working = totalReported - onLeave;
-
-        return {
-            totalTeam: filteredTeam.length,
-            totalReported,
-            working,
-            onLeave
-        };
-    }, [filteredTaskStatuses, allProfiles, EXCLUDED_EMAILS]);
-
     const CHART_COLORS = [
         '#C5A059', // Primary Gold
         '#8E7036', // Bronze
-        '#E5D5B0', // Champagne
-        '#A0A0A0', // Silver
+        '#c5ac73ff', // Champagne
+        '#b6a582ff', // Silver
         '#5A5342', // Slate Gold
-        '#2C2C2C', // Obsidian
+        '#424040ff', // Obsidian
         '#7A6632', // Dark Bronze
-        '#D4C491', // Pale Gold
+        '#b8a770ff', // Pale Gold
     ];
 
     const trendChartData = useMemo(() => {
@@ -492,134 +478,116 @@ const ExportLogs = () => {
         return dataArr;
     }, [monthStats, selectedDate, trendRange]);
 
+    const presenceStats = useMemo(() => {
+        const filteredTeam = allProfiles.filter(p => !EXCLUDED_EMAILS.includes(p.email?.toLowerCase() || ''));
 
-    // Export functions
-    const exportToPDF = async () => {
-        if (!exportRef.current) return;
-        const canvas = await html2canvas(exportRef.current, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#f1f4f9',
-            onclone: (doc) => {
-                const element = doc.querySelector('[ref="exportRef"]') as HTMLElement;
-                if (element) {
-                    element.style.padding = '40px';
-                    element.style.background = '#f1f4f9';
-                }
+        const onLeave = filteredTaskStatuses.filter(status =>
+            [...(status.new_dev || []), ...(status.updates || [])]
+                .some(l => l.toLowerCase().includes('leave'))
+        ).length;
 
-                // Remove everything with data-export-hide
-                doc.querySelectorAll('[data-export-hide]').forEach(el => el.remove());
+        const totalReported = filteredTaskStatuses.length;
+        const working = totalReported - onLeave;
 
-                // Fix header visibility (remove gradients/transparency)
-                const header = doc.querySelector('h1');
-                if (header) {
-                    header.style.color = '#000000';
-                    header.style.webkitTextFillColor = '#000000';
-                    header.style.background = 'none';
-                    header.style.backgroundImage = 'none';
-                }
+        return {
+            totalTeam: filteredTeam.length,
+            totalReported,
+            working,
+            onLeave
+        };
+    }, [filteredTaskStatuses, allProfiles, EXCLUDED_EMAILS]);
 
-                // Fix glass cards for export (remove blur/transparency)
-                doc.querySelectorAll('.glass-card').forEach((card: any) => {
-                    card.style.background = '#ffffff';
-                    card.style.backdropFilter = 'none';
-                    card.style.border = '1px solid #e2e8f0';
-                });
+    const userEntry = taskStatuses.find(s => s.user_id === (selectedUserId || user?.id));
 
-                // Ensure table visibility
-                doc.querySelectorAll('table').forEach((table: any) => {
-                    table.style.background = '#ffffff';
-                });
-            }
+    const separatedStatuses = useMemo(() => {
+        const active = [];
+        const onLeave = [];
+
+        filteredTaskStatuses.forEach(status => {
+            const isLeave = [...(status.new_dev || []), ...(status.updates || [])]
+                .some(l => l.toLowerCase().includes('leave'));
+            if (isLeave) onLeave.push(status);
+            else active.push(status);
         });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10;
-        let currentY = margin;
 
-        const blocks = exportRef.current.querySelectorAll('[data-pdf-block]');
+        return { active, onLeave };
+    }, [filteredTaskStatuses]);
 
-        for (let i = 0; i < blocks.length; i++) {
-            const block = blocks[i] as HTMLElement;
-            const canvas = await html2canvas(block, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#f1f4f9',
-                onclone: (doc) => {
-                    // Fix glass cards for export (remove blur/transparency)
-                    doc.querySelectorAll('.glass-card').forEach((card: any) => {
-                        card.style.background = '#ffffff';
-                        card.style.backdropFilter = 'none';
-                        card.style.border = '1px solid #e2e8f0';
-                    });
-                    const h1 = doc.querySelector('h1');
-                    if (h1) {
-                        h1.style.color = '#000000';
-                        h1.style.webkitTextFillColor = '#000000';
-                        h1.style.background = 'none';
-                    }
+
+    // Sync form with user's current entry
+    useEffect(() => {
+        const extractCasesFromLinks = (links: string[]) => {
+            return links.map(link => {
+                if (link.includes('atlassian.spscommerce.com/browse/FIBQ-')) {
+                    return link.split('FIBQ-')[1];
                 }
+                return link;
+            }).join(', ');
+        };
+
+        if (userEntry) {
+            setNewDevText(extractCasesFromLinks(userEntry.new_dev || []));
+            setUpdateText(extractCasesFromLinks(userEntry.updates || []));
+        } else {
+            setNewDevText('');
+            setUpdateText('');
+        }
+    }, [userEntry, selectedUserId]);
+
+    const handleSave = async () => {
+        const targetUserId = selectedUserId || user?.id;
+        if (!targetUserId) return;
+
+        const processInputToLinks = (text: string) => {
+            return text.split(/[,\n\r]+/).map(item => item.trim()).filter(Boolean).map(item => {
+                const lowerItem = item.toLowerCase();
+                if (lowerItem === 'leave' || lowerItem === 'na' || lowerItem === 'n/a' || lowerItem.includes('exercise')) {
+                    return item;
+                }
+                if (item.includes('atlassian.spscommerce.com/browse/')) {
+                    return item;
+                }
+                const caseNumber = item.replace(/^FIBQ-/i, '');
+                return `https://atlassian.spscommerce.com/browse/FIBQ-${caseNumber}`;
+            });
+        };
+
+        const filteredNew = processInputToLinks(newDevText);
+        const filteredUpd = processInputToLinks(updateText);
+
+        setSaving(true);
+        const formatted = format(selectedDate, 'yyyy-MM-dd');
+
+        if (userEntry) {
+            // Update existing
+            const { error } = await supabase
+                .from('daily_task_status')
+                .update({ new_dev: filteredNew, updates: filteredUpd })
+                .eq('id', userEntry.id);
+
+            if (error) toast({ title: 'Update failed' });
+            else toast({ title: 'Updated successfully!' });
+        } else {
+            // Insert new (even if both arrays are empty)
+            const { error } = await supabase.from('daily_task_status').insert({
+                user_id: targetUserId,
+                date: formatted,
+                new_dev: filteredNew,
+                updates: filteredUpd,
             });
 
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = pageWidth - (margin * 2);
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-            // Check if block fits on current page
-            if (currentY + imgHeight > pageHeight - margin) {
-                pdf.addPage();
-                // Fill background for new page
-                pdf.setFillColor(241, 244, 249);
-                pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-                currentY = margin;
-            } else if (i === 0) {
-                // Fill background for first page
-                pdf.setFillColor(241, 244, 249);
-                pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-            }
-
-            pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
-            currentY += imgHeight + 10; // 10mm gap between blocks
+            if (error) toast({ title: 'Save failed' });
+            else toast({ title: 'Saved successfully!' });
         }
 
-        // FOOTER: WASP Branding
-        const brandText = 'WASP';
-        const brandSub = 'INTELLIGENCE';
-
-        // Capture logo specifically for footer
-        const logoEl = exportRef.current.querySelector('#wasp-logo-export') as HTMLElement;
-        let logoDataUrl = null;
-        if (logoEl) {
-            const logoCanvas = await html2canvas(logoEl, { scale: 3, backgroundColor: null });
-            logoDataUrl = logoCanvas.toDataURL('image/png');
-        }
-
-        const totalPages = pdf.getNumberOfPages();
-        for (let i = 1; i <= totalPages; i++) {
-            pdf.setPage(i);
-            const footerY = pageHeight - 10;
-
-            // Draw Logo if available
-            if (logoDataUrl) {
-                const logoSize = 6;
-                pdf.addImage(logoDataUrl, 'PNG', (pageWidth / 2) - 14, footerY - 5, logoSize, logoSize);
-            }
-
-            // Draw Brand Text
-            pdf.setFontSize(8);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(30, 41, 59); // Slate-800
-            pdf.text(brandText, (pageWidth / 2) - 6, footerY);
-
-            pdf.setFont('helvetica', 'normal');
-            pdf.setTextColor(148, 163, 184); // Slate-400
-            pdf.text(brandSub, (pageWidth / 2) + 6, footerY);
-        }
-
-        pdf.save(`Logs-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ['daily_task_status', dateStr] });
+        queryClient.invalidateQueries({ queryKey: ['daily_task_status', dateStr] });
+        queryClient.invalidateQueries({ queryKey: ['month_stats', viewDate.getFullYear(), viewDate.getMonth()] });
+        setSaving(false);
     };
+
+
 
     const exportToPNG = async () => {
         if (!exportRef.current) return;
@@ -662,46 +630,8 @@ const ExportLogs = () => {
         link.click();
     };
 
-    const exportToExcel = () => {
-        const rows = filteredTaskStatuses.map(s => {
-            const newDev = (s.new_dev || []).filter(isValidCase);
-            const updates = (s.updates || []).filter(isValidCase);
-            return {
-                User: s.profiles?.full_name || 'Unknown',
-                'New Development': newDev.length ? newDev.join('\n') : '-',
-                Updates: updates.length ? updates.join('\n') : '-',
-                Count: `${newDev.length + updates.length} ${newDev.length + updates.length === 1 ? 'case' : 'cases'}`,
-            };
-        });
-        const ws = XLSX.utils.json_to_sheet(rows);
-        ws['!cols'] = [{ wch: 20 }, { wch: 60 }, { wch: 60 }, { wch: 22 }];
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Daily Status');
-        XLSX.writeFile(wb, `Status-${dateStr}.xlsx`);
-    };
-
-    const sendEmailStatus = async () => {
-        // Trigger PNG download so user can attach it
-        await exportToPNG();
-
-        const subject = `Status - ${format(selectedDate, 'PPPP')}`;
-        const cc = "amit.gilda@bristlecone.com,Aditya.Sanjay.Dahe@bristlecone.com,Rohit.Gadekar@bristlecone.com,Divyansh.Singh@bristlecone.com,mouli.maiti@bristlecone.com,ayush.tyagi@bristlecone.com,anil.panigrahi@bristlecone.com,sumit.dadanwale@bristlecone.com,vitthal.dhakane@bristlecone.com,shubham.chakraborty@bristlecone.com";
-
-        let body = `Hello Pankaj,\n\nPlease find status for ${format(selectedDate, 'PPPP')}. A snapshot has been attached for quick reference.\n\n`;
-
-
-        body += `Logs can also be viewed at https://wasp.rohitgadekar.dev/p/status?date=${dateStr}.\n\nThis email was generated automatically for reporting purposes.\n\n\nWASP`;
-
-        const mailtoUri = `mailto:pankaj.patil@bristlecone.com?cc=${cc}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.location.href = mailtoUri;
-
-        toast({
-            title: "Email Client Opened",
-            description: "A summary PNG has also been downloaded for you to attach.",
-        });
-    };
-
     const allLoaded = !loadingTable && !loadingChart && !loadingProfiles && !loadingUpcomingLeaves && !loadingUpcomingHolidays;
+
 
     useEffect(() => {
         if (allLoaded && !downloaded) {
@@ -717,8 +647,14 @@ const ExportLogs = () => {
         }
     }, [allLoaded, downloaded]);
 
+
+
+
+    const inputClasses = "h-12 pl-4 pr-4 bg-white/40 border border-[#E3DAC9] rounded-md font-sans text-sm text-[#2C241B] placeholder:text-[#A59582]/30 focus-visible:ring-0 focus-visible:border-2 focus-visible:border-[#C5A880] transition-all w-full";
+    const labelClasses = "text-[9px] font-sans font-bold uppercase tracking-[0.2em] text-[#8C7654] ml-1 mb-1.5 block";
+
     return (
-        <div className="select-none">
+        <div className="flex-1 container mb-10 px-4 select-none animate-in fade-in slide-in-from-bottom-4 duration-700 transition-all ease-in-out">
             {!downloaded ? (
                 <div className="flex h-screen w-screen flex-col items-center justify-center bg-[#FAF9F5] text-[#8C7654]">
                     <div className="w-12 h-12 rounded-full border-4 border-[#C5A880]/20 border-t-[#C5A880] animate-spin mb-4" />
@@ -728,38 +664,15 @@ const ExportLogs = () => {
             ) : (
                 <div className="flex h-screen w-screen flex-col items-center justify-center bg-[#FAF9F5] text-center p-6">
                     <div className="w-16 h-16 rounded-full bg-[#C5A880]/15 flex items-center justify-center text-[#8C7654] mb-6 border border-[#E5DCCB]">
-                        <span className="text-2xl">✓</span>
+                        <Check />
                     </div>
                     <h3 className="text-2xl font-bold text-[#2C241B] mb-2 font-serif">Report Downloaded</h3>
                     <p className="text-sm text-[#8C7654] leading-relaxed mb-6 font-sans">
                         The snapshot for <strong>{format(selectedDate, 'PPPP')}</strong> has been downloaded to your system.
                     </p>
-                    <Button
-                        onClick={() => navigate('/status')}
-                        className="rounded-full bg-[#2C241B] hover:bg-[#38322D] text-white px-8 h-10 text-xs font-sans font-bold uppercase tracking-widest"
-                    >
-                        Back to Status
-                    </Button>
                 </div>
             )}
-
-            <div
-                ref={exportRef}
-                data-report-root
-                data-ready={allLoaded ? 'true' : 'false'}
-                // style={!downloaded ? {
-                //     position: 'absolute',
-                //     left: '-9999px',
-                //     top: 0,
-                //     width: '1200px',
-                //     backgroundColor: '#f1f4f9',
-                // } : undefined}
-                className={cn(
-                    "relative z-10 transition-all duration-500",
-                    downloaded && "relative min-h-screen bg-gradient-to-tr from-[#FAF9F5] via-[#FDFDFB] to-[#F3EEE3] p-6"
-                )}
-            >
-
+            <div data-report-root data-ready={allLoaded ? 'true' : 'false'} ref={exportRef} className="relative z-10 transition-all duration-500">
                 <div className="space-y-12 mx-auto p-6 max-w-7xl pt-10">
                     {/* Branding Header */}
                     <div className="flex items-center justify-between border-b border-[#E5DCCB]/60 pb-8 mb-2">
@@ -834,15 +747,38 @@ const ExportLogs = () => {
                     </div>
 
                     {/* Calendar + Chart Grid */}
-                    <div data-pdf-block className="grid gap-8 lg:grid-cols-2">
+                    <div className="grid gap-8 lg:grid-cols-2">
                         <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden group">
                             <CardHeader className="p-8 pb-4">
-                                <CardTitle className="text-2xl font-bold text-[#2C241B]">Calendar</CardTitle>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="text-2xl font-bold  text-[#2C241B]">Calendar</CardTitle>
+                                    {isSuperUser && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={toggleHoliday}
+                                            data-export-hide
+                                            className={cn(
+                                                "rounded-full font-sans font-bold text-[10px] uppercase tracking-widest transition-colors",
+                                                holidays[format(selectedDate, 'yyyy-MM-dd')]
+                                                    ? "text-[#8C2B2B] bg-[#8C2B2B]/10 hover:bg-[#8C2B2B]/20"
+                                                    : "text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B]"
+                                            )}
+                                        >
+                                            {holidays[format(selectedDate, 'yyyy-MM-dd')] ? "Unmark Holiday" : "Mark Holiday"}
+                                        </Button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent className="p-8 pt-4 flex justify-center">
                                 <CalendarWithDots
                                     selected={selectedDate}
-                                    onSelect={handleDateSelect}
+                                    onSelect={d => {
+                                        if (d) {
+                                            setSelectedDate(d);
+                                            setViewDate(d);
+                                        }
+                                    }}
                                     onMonthChange={setViewDate}
                                     monthStats={monthStats}
                                     holidays={holidays}
@@ -943,7 +879,7 @@ const ExportLogs = () => {
                                     </div>
                                     <DropdownMenu modal={false}>
                                         <DropdownMenuTrigger asChild>
-                                            <Button className="w-[160px] h-10 rounded-xl border border-[#E5DCCB] bg-[#FDFDFB] hover:bg-[#FAF9F5] hover:border-[#C5A880] focus:ring-0 outline-none px-4 text-xs font-sans font-bold text-[#2C241B] transition-all flex items-center justify-between">
+                                            <Button className="w-[160px] h-10 rounded-xl border border-[#E5DCCB] bg-[#FDFDFB] hover:border-[#C5A880] focus:ring-0 outline-none px-4 text-xs font-sans font-bold text-[#2C241B] transition-all flex items-center justify-between">
                                                 <span>{trendRange === 'week' ? 'Last 7 Days' : 'Last 30 Days'}</span>
                                                 <span className="w-1.5 h-1.5 rounded-full bg-[#C5A880] ml-2 inline-block shrink-0" />
                                             </Button>
@@ -1047,6 +983,7 @@ const ExportLogs = () => {
                             </CardContent>
                         </Card>
                     </div>
+
 
                     {/* New Individual Charts Section */}
                     {dayStats.total > 0 && (
@@ -1184,7 +1121,7 @@ const ExportLogs = () => {
                                                 </div>
                                                 <div className="flex flex-wrap justify-center gap-6 mt-6">
                                                     {distributionData.map((item, i) => (
-                                                        <div key={i} className="flex flex-col items-center px-8 py-4 rounded-[2rem] min-w-[140px] bg-[#FAF9F5">
+                                                        <div key={i} className="flex flex-col items-center px-8 py-4 rounded-[2rem] min-w-[140px] ">
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                                                                 <span className="text-xs font-sans font-bold uppercase tracking-wider" style={{ color: item.color }}>{item.name}</span>
@@ -1249,7 +1186,7 @@ const ExportLogs = () => {
                                                         <div key={i} className="flex items-center gap-1.5 px-4 py-2 rounded-full">
                                                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                                                             <span className="text-[10px] font-sans font-bold uppercase tracking-wider" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{item.name}</span>
-                                                            <span className="text-xs font-sans font-semibold ml-1" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{Math.round((item.value / dayStats.total) * 100)}%</span>
+                                                            <span className="text-xs font-sans font-semibold" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{Math.round((item.value / dayStats.total) * 100)}%</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1261,9 +1198,7 @@ const ExportLogs = () => {
                         </div>
                     )}
 
-
-
-                    {/* Report Summary Table (Read Only) */}
+                    {/* Report Summary Table */}
                     <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden shadow-2xl">
                         <CardHeader className="p-10 pb-4">
                             <div className="flex items-center justify-between gap-4">
@@ -1299,7 +1234,10 @@ const ExportLogs = () => {
                                                 <TableHead className="text-[#8C7654] font-sans font-bold uppercase tracking-[0.2em] text-[10px] h-14 rounded-l-xl pl-8">Reporter</TableHead>
                                                 <TableHead className="text-[#8C7654] font-sans font-bold uppercase tracking-[0.2em] text-[10px] h-14">New Development</TableHead>
                                                 <TableHead className="text-[#8C7654] font-sans font-bold uppercase tracking-[0.2em] text-[10px] h-14">Updates & Maintenance</TableHead>
-                                                <TableHead className="text-right text-[#8C7654] font-sans font-bold uppercase tracking-[0.2em] text-[10px] h-14 rounded-r-xl">Metrics</TableHead>
+                                                <TableHead className={cn(
+                                                    "text-right text-[#8C7654] font-sans font-bold uppercase tracking-[0.2em] text-[10px] h-14",
+                                                    !isSuperUser && "rounded-r-xl pr-8"
+                                                )}>Metrics</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -1394,7 +1332,7 @@ const ExportLogs = () => {
                             <CardHeader className="p-10 pb-4 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
                                     <CardTitle className="text-2xl font-inter font-bold text-[#2C241B]">Personnel Absence Protocol</CardTitle>
-                                    <p className="text-sm font-inter  text-[#8C7654]">Team members currently on scheduled leave {format(selectedDate, 'EEEE, MMMM do, yyyy')}</p>
+                                    <p className="text-sm font-inter  text-[#8C7654]">Team members on leave as of {format(selectedDate, 'EEEE, MMMM do, yyyy')}</p>
                                 </div>
                                 <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest">
                                     {separatedStatuses.onLeave.length} PERSONNEL
@@ -1405,7 +1343,7 @@ const ExportLogs = () => {
                                     {separatedStatuses.onLeave.map((status) => (
                                         <div
                                             key={status.id}
-                                            className="group relative bg-[#FAF9F5] rounded-3xl p-6 hover:bg-[#C5A880]/10  border border-[#E5DCCB]/20 transition-all duration-300"
+                                            className="group relative bg-[#FAF9F5] rounded-3xl p-6 hover:bg-[#C5A880]/10  border border-[#E5DCCB]/50 transition-all duration-300"
                                         >
                                             <div className="flex flex-col">
                                                 <span className="font-inter font-semibold text-[#8C7654] text-lg">
@@ -1427,18 +1365,20 @@ const ExportLogs = () => {
                         </Card>
                     )}
 
+
+
                     {/* Upcoming Schedule Overview */}
                     <Card className="relative bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden">
                         {/* <div
-                                                className="pointer-events-none absolute right-24 top-1/2 -translate-y-1/2 select-none"
-                    
-                                            >
-                                                <img
-                                                    src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
-                                                    alt=""
-                                                    className="h-56 w-56 text-[#C5A880] "
-                                                />
-                                            </div> */}
+                            className="pointer-events-none absolute right-24 top-1/2 -translate-y-1/2 select-none"
+
+                        >
+                            <img
+                                src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
+                                alt=""
+                                className="h-56 w-56 text-[#C5A880] "
+                            />
+                        </div> */}
                         <CardHeader className="relative z-10 p-8 pb-4 flex flex-row items-center justify-between gap-4">
                             <div className="space-y-1">
                                 <CardTitle className="text-2xl font-bold text-[#2C241B]">Upcoming Leaves & Holidays</CardTitle>
@@ -1508,6 +1448,7 @@ const ExportLogs = () => {
                                                             {event.leave.profiles?.full_name || 'Team member'}
 
                                                         </p>
+
                                                         <div className="flex flex-shrink-0 flex-row items-center justify-center gap-2">
 
                                                             <Badge className="bg-[#C5A880]/30 text-[#8C7654] border-none rounded-md px-2 py-1 text-[7px] font-sans font-bold uppercase tracking-widest">
@@ -1559,6 +1500,7 @@ const ExportLogs = () => {
                     </Card>
                 </div>
             </div>
+
         </div>
     );
 };
