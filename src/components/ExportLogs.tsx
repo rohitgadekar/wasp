@@ -635,15 +635,78 @@ const ExportLogs = () => {
 
     useEffect(() => {
         if (allLoaded && !downloaded) {
-            const timer = setTimeout(async () => {
+            let cancelled = false;
+            const MAX_WAIT_MS = 15000;
+
+            const waitForDomStability = (): Promise<void> => {
+                return new Promise((resolve) => {
+                    if (!exportRef.current) {
+                        resolve();
+                        return;
+                    }
+
+                    let stabilityTimer: ReturnType<typeof setTimeout> | null = null;
+                    // Wait 1s after the last DOM mutation — this covers Recharts' async
+                    // rendering and its default ~1500ms entry animations fully completing
+                    const STABILITY_MS = 1000;
+
+                    const observer = new MutationObserver(() => {
+                        // Every mutation resets the stability countdown
+                        if (stabilityTimer) clearTimeout(stabilityTimer);
+                        stabilityTimer = setTimeout(() => {
+                            observer.disconnect();
+                            resolve();
+                        }, STABILITY_MS);
+                    });
+
+                    observer.observe(exportRef.current, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        characterData: true,
+                    });
+
+                    // Kick off the first countdown (handles the case where DOM is already stable)
+                    stabilityTimer = setTimeout(() => {
+                        observer.disconnect();
+                        resolve();
+                    }, STABILITY_MS);
+
+                    // Absolute safety cap so we never hang indefinitely
+                    setTimeout(() => {
+                        if (stabilityTimer) clearTimeout(stabilityTimer);
+                        observer.disconnect();
+                        resolve();
+                    }, MAX_WAIT_MS);
+                });
+            };
+
+            const startExport = async () => {
+                // Let React commit the initial DOM tree
+                await new Promise(r => setTimeout(r, 500));
+                if (cancelled) return;
+
+                // Wait until no DOM mutations for 1 second (charts + animations done)
+                await waitForDomStability();
+                if (cancelled) return;
+
+                // Final paint-flush buffer
+                await new Promise(r => setTimeout(r, 500));
+                if (cancelled) return;
+
                 try {
                     await exportToPNG();
                     setDownloaded(true);
                 } catch (err) {
                     console.error('Failed auto export:', err);
                 }
-            }, 1500);
-            return () => clearTimeout(timer);
+            };
+
+            startExport();
+
+            return () => {
+                cancelled = true;
+            };
         }
     }, [allLoaded, downloaded]);
 
@@ -672,7 +735,9 @@ const ExportLogs = () => {
                     </p>
                 </div>
             )}
-            <div data-report-root data-ready={allLoaded ? 'true' : 'false'} ref={exportRef} className="relative z-10 transition-all duration-500">
+            {/* Export-only content: rendered offscreen for html2canvas to capture */}
+            <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '1400px', overflow: 'hidden' }} aria-hidden="true">
+                <div data-report-root data-ready={allLoaded ? 'true' : 'false'} ref={exportRef} className="relative z-10 transition-all duration-500">
                 <div className="space-y-12 mx-auto p-6 max-w-7xl pt-10">
                     {/* Branding Header */}
                     <div className="flex items-center justify-between border-b border-[#E5DCCB]/60 pb-8 mb-2">
@@ -1499,6 +1564,7 @@ const ExportLogs = () => {
                         </CardContent>
                     </Card>
                 </div>
+            </div>
             </div>
 
         </div>
