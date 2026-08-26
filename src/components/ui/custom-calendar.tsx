@@ -45,11 +45,11 @@ export function CalendarWithDots({
         onMonthChange?.(newMonth);
     };
 
-    const nextMonth = () => {
-        const newMonth = addMonths(currentMonth, 1);
-        setCurrentMonth(newMonth);
-        onMonthChange?.(newMonth);
-    };
+    // const nextMonth = () => {
+    //     const newMonth = addMonths(currentMonth, 1);
+    //     setCurrentMonth(newMonth);
+    //     onMonthChange?.(newMonth);
+    // };
 
     const hasData = (date: Date) => {
         const key = format(date, "yyyy-MM-dd");
@@ -60,6 +60,19 @@ export function CalendarWithDots({
         const key = format(date, "yyyy-MM-dd");
         return holidays?.[key];
     };
+
+    const today = new Date();
+    const isCurrentMonth = isSameMonth(currentMonth, today);
+
+    const nextMonth = () => {
+        // Don't allow navigating beyond the current month
+        if (isCurrentMonth) return;
+
+        const newMonth = addMonths(currentMonth, 1);
+        setCurrentMonth(newMonth);
+        onMonthChange?.(newMonth);
+    };
+
 
     return (
         <div className={cn("w-full  mx-auto  rounded-lg  ", className)}>
@@ -77,7 +90,12 @@ export function CalendarWithDots({
                 </h2>
                 <button
                     onClick={nextMonth}
-                    className="p-2 rounded-full hover:bg-[#E3DAC9] transition-colors hover:text-white border border-[#E3DAC9]"
+                    disabled={isCurrentMonth}
+                    className={cn(
+                        "p-2 rounded-full border border-[#E3DAC9] transition-colors",
+                        !isCurrentMonth && "hover:bg-[#E3DAC9] hover:text-white",
+                        isCurrentMonth && "opacity-30 cursor-not-allowed"
+                    )}
                     aria-label="Next month"
                 >
                     <ChevronRight className="w-5 h-5" />
@@ -107,21 +125,28 @@ export function CalendarWithDots({
                     const dataExists = hasData(day);
                     const holidayName = getHolidayName(day);
                     const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                    const isFutureDate = day > today;
 
                     return (
                         <button
                             key={day.toISOString()}
+                            disabled={isFutureDate}
                             onClick={() => onSelect?.(day)}
                             className={cn(
                                 "relative flex items-center justify-center w-10 h-10 rounded-full text-sm transition-all",
-                                "hover:bg-[#997C53] hover:text-accent-foreground",
+                                !isFutureDate && "hover:bg-[#997C53] hover:text-accent-foreground",
+                                isFutureDate && "opacity-30 cursor-not-allowed",
                                 isSelected && "bg-[#2C241B] text-primary-foreground font-bold shadow-md",
                                 isToday && !isSelected && "font-bold text-[#2C241B] ring-2 ring-[#997C53]/50",
                                 dataExists && !isSelected && "font-bold text-[#2C241B]",
                                 isWeekend && !isSelected && !dataExists && "text-muted-foreground/40 bg-muted/30",
                                 holidayName && !isSelected && "text-orange-500 font-bold bg-orange-500/10"
                             )}
-                            title={holidayName || (isWeekend ? "Weekend Off" : undefined)}
+                            title={
+                                isFutureDate
+                                    ? "Future date"
+                                    : holidayName || (isWeekend ? "Weekend Off" : undefined)
+                            }
                             aria-label={format(day, "PPP")}
                         >
                             {format(day, "d")}
