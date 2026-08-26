@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -209,10 +209,19 @@ const Auth = () => {
               </CardContent>
 
               {/* Bottom luxury branding stripe */}
-              <div className="p-6 bg-[#FAF8F5] border-t border-[#EAE2D5] text-center">
+              <div className="p-6 bg-[#FAF8F5] border-t border-[#EAE2D5] text-center space-y-2">
                 <p className="text-[8px] font-sans font-bold uppercase tracking-[0.3em] text-[#A59582] leading-relaxed">
                   Proprietary Technology • Powered by Eagle Labs
                 </p>
+                <div className="flex items-center justify-center gap-4 text-[10px] font-sans text-[#8C7654] font-medium">
+                  <Link to="/privacy" className="hover:text-[#2C241B] transition-colors underline underline-offset-2">
+                    Privacy Policy
+                  </Link>
+                  <span className="text-[#C5A880]">•</span>
+                  <Link to="/terms" className="hover:text-[#2C241B] transition-colors underline underline-offset-2">
+                    Terms of Service
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

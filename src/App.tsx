@@ -12,6 +12,8 @@ import UserManagement from "./pages/UserManagement";
 import Maps from "./pages/Maps";
 import Wiki from "./pages/Wiki";
 import Scripts from "./pages/Scripts";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
@@ -51,6 +53,8 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>
