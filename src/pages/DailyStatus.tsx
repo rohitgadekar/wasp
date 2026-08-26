@@ -124,7 +124,7 @@ const isValidCase = (link: string) => {
 const DailyStatus = () => {
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
-    const { isSuperUser, role } = useUserRole();
+    const { isSuperUser, role, isOwner, isManager } = useUserRole();
     const exportRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
 
@@ -1442,7 +1442,7 @@ const DailyStatus = () => {
                                             </CardTitle>
                                             <p className="text-sm font-sans  text-[#8C7654]">Capture your metrics for {format(selectedDate, 'PPP')}</p>
                                         </div>
-                                        {isSuperUser && (
+                                        {(isOwner || isManager) && (
                                             <div className="w-full md:w-80 space-y-2">
                                                 <Label className={labelClasses}>Switch User Identity</Label>
                                                 <DropdownMenu modal={false}>
