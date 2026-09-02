@@ -237,10 +237,6 @@ const AdvancedAnalytics = () => {
     };
   });
 
-  const [selectedUserId, setSelectedUserId] = useState<string>(() => {
-    return searchParams.get("userId") || searchParams.get("user") || "";
-  });
-
   const [isExporting, setIsExporting] = useState(false);
   const pdfReportRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -264,17 +260,6 @@ const AdvancedAnalytics = () => {
 
   useTitle("Insight Studio");
 
-  const applyPreset = (mode: Exclude<RangeMode, "custom">) => {
-    const range = getPresetRange(mode);
-    setRangeMode(mode);
-    setDateRange({ from: range.start, to: range.end });
-  };
-
-  const handleRangeSelect = (range: DateRange | undefined) => {
-    setRangeMode("custom");
-    setDateRange(range ?? { from: undefined, to: undefined });
-  };
-
   const { data: profiles = [], isLoading: loadingProfiles } = useQuery({
     queryKey: ["advanced_analytics_profiles"],
     queryFn: async () => {
@@ -290,54 +275,135 @@ const AdvancedAnalytics = () => {
     // enabled: isOwner,
   });
 
-  // Resolve user parameter from URL (name, email, or id) to selectedUserId
-  useEffect(() => {
-    const userParam = searchParams.get("user") || searchParams.get("userId");
-    if (!userParam || profiles.length === 0) return;
+  const userParam = searchParams.get("user") || searchParams.get("userId") || "";
 
+  // Derive selectedProfile directly from searchParams and loaded profiles
+  const selectedProfile = useMemo(() => {
+    if (!profiles.length || !userParam) return undefined;
     const normalizedParam = userParam.trim().toLowerCase();
-    const matched = profiles.find((p) => {
+    return profiles.find((p) => {
       if (p.id.toLowerCase() === normalizedParam) return true;
       if (p.full_name && p.full_name.trim().toLowerCase() === normalizedParam) return true;
       if (p.full_name && p.full_name.trim().toLowerCase().replace(/\s+/g, "-") === normalizedParam) return true;
       if (p.email && p.email.toLowerCase() === normalizedParam) return true;
       return false;
     });
+  }, [profiles, userParam]);
 
-    if (matched && matched.id !== selectedUserId) {
-      setSelectedUserId(matched.id);
-    }
-  }, [profiles, searchParams, selectedUserId]);
+  const selectedUserId = selectedProfile?.id || "";
 
-  const selectedProfile = profiles.find(
-    (profile) => profile.id === selectedUserId
-  );
+  const handleUserSelect = (profile: ProfileOption) => {
+    const userIdentifier = profile.full_name || profile.email || profile.id;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("userId");
+      next.set("user", userIdentifier);
+      return next;
+    }, { replace: true });
+  };
 
-  // Synchronize URL parameters with active report selections using member name instead of raw UUID
-  useEffect(() => {
-    const params = new URLSearchParams();
-    const userIdentifier = selectedProfile?.full_name || selectedProfile?.email;
-    if (userIdentifier) {
-      params.set("user", userIdentifier);
-    } else if (selectedUserId) {
-      const existingUser = searchParams.get("user");
-      if (existingUser) {
-        params.set("user", existingUser);
+  const applyPreset = (mode: Exclude<RangeMode, "custom">) => {
+    const range = getPresetRange(mode);
+    setRangeMode(mode);
+    setDateRange({ from: range.start, to: range.end });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("mode", mode);
+      if (range.start) next.set("from", normalizeDate(range.start));
+      if (range.end) next.set("to", normalizeDate(range.end));
+      return next;
+    }, { replace: true });
+  };
+
+  const handleRangeSelect = (range: DateRange | undefined) => {
+    setRangeMode("custom");
+    setDateRange(range ?? { from: undefined, to: undefined });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("mode", "custom");
+      if (range?.from) {
+        next.set("from", normalizeDate(range.from));
       } else {
-        params.set("user", selectedUserId);
+        next.delete("from");
+      }
+      if (range?.to) {
+        next.set("to", normalizeDate(range.to));
+      } else {
+        next.delete("to");
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  // Sync date range state when URL searchParams change (e.g. browser back/forward navigation)
+  useEffect(() => {
+    const modeParam = searchParams.get("mode");
+    if (modeParam === "week" || modeParam === "month" || modeParam === "custom") {
+      setRangeMode((prev) => (prev !== modeParam ? modeParam : prev));
+    }
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+    if (fromParam) {
+      const parsedFrom = parseISO(fromParam);
+      if (isValid(parsedFrom)) {
+        const fromDate = startOfDay(parsedFrom);
+        let toDate: Date | undefined = undefined;
+        if (toParam) {
+          const parsedTo = parseISO(toParam);
+          if (isValid(parsedTo)) {
+            toDate = startOfDay(parsedTo);
+          }
+        }
+        setDateRange((prev) => {
+          if (
+            prev.from?.getTime() === fromDate.getTime() &&
+            prev.to?.getTime() === toDate?.getTime()
+          ) {
+            return prev;
+          }
+          return { from: fromDate, to: toDate };
+        });
       }
     }
-    if (dateRange.from) {
-      params.set("from", normalizeDate(dateRange.from));
+  }, [searchParams]);
+
+  // Canonicalize URL to member name once profile is resolved if it was given as raw UUID or userId param
+  useEffect(() => {
+    if (!selectedProfile) return;
+    const rawUserId = searchParams.get("userId");
+    const currentUser = searchParams.get("user");
+    if (rawUserId || (currentUser === selectedProfile.id && selectedProfile.full_name)) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("userId");
+        if (selectedProfile.full_name) {
+          next.set("user", selectedProfile.full_name);
+        }
+        return next;
+      }, { replace: true });
     }
-    if (dateRange.to) {
-      params.set("to", normalizeDate(dateRange.to));
-    }
-    if (rangeMode) {
-      params.set("mode", rangeMode);
-    }
-    setSearchParams(params, { replace: true });
-  }, [selectedUserId, selectedProfile, dateRange, rangeMode, setSearchParams, searchParams]);
+  }, [selectedProfile, searchParams, setSearchParams]);
+
+  // Populate default range params in URL on initial mount if not present
+  useEffect(() => {
+    setSearchParams((prev) => {
+      let changed = false;
+      const next = new URLSearchParams(prev);
+      if (!next.get("mode")) {
+        next.set("mode", rangeMode);
+        changed = true;
+      }
+      if (!next.get("from") && dateRange.from) {
+        next.set("from", normalizeDate(dateRange.from));
+        changed = true;
+      }
+      if (!next.get("to") && dateRange.to) {
+        next.set("to", normalizeDate(dateRange.to));
+        changed = true;
+      }
+      return changed ? next : prev;
+    }, { replace: true });
+  }, []);
 
   const { data: reports = [], isLoading: loadingReports } = useQuery({
     queryKey: ["advanced_analytics_report", selectedUserId, startDate, endDate],
@@ -845,7 +911,7 @@ const AdvancedAnalytics = () => {
                   {profiles.map((profile) => (
                     <DropdownMenuItem
                       key={profile.id}
-                      onClick={() => setSelectedUserId(profile.id)}
+                      onClick={() => handleUserSelect(profile)}
                       className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer text-sm font-medium"
                       style={{ color: BROWN }}
                     >
