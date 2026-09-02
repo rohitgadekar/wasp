@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTitle } from '@/hooks/use-title';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageSquarePlus, Menu, X, Clock, Trash2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Loader2, MessageSquarePlus, Menu, X, Clock, Trash2, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import ChatMessage, { Message } from '@/components/ai-agent/ChatMessage';
 import ChatInput from '@/components/ai-agent/ChatInput';
@@ -173,33 +173,43 @@ const AiAgent = () => {
 
   if (!isAuthorized) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center  px-6 text-center overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <div
+          className="w-full max-w-md rounded-[2em] p-8 md:p-10 text-center space-y-6"
+        >
+          <div
+            className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center border shadow-inner"
+          >
+            <ShieldAlert className="w-8 h-8 text-[#C5A880]" />
+          </div>
 
-        <div className="relative z-10 max-w-2xl w-full flex flex-col items-center justify-center">
-
-
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 leading-tight">
-            Hey, {user?.user_metadata?.full_name.split(" ")[0] || "there"}
-            <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-t from-primary to-primary/50">
-              You're close… but not in yet.
-            </span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-lg mx-auto leading-relaxed">
-            Nyra isn't unlocked for you. Hit up your admin to get your access.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              onClick={() => navigate('/')}
-              size="lg"
-              className="rounded-full font-bold shadow-xl hover:scale-105 active:scale-95 transition-all"
+          <div className="space-y-2">
+            <Badge
+              variant="outline"
+              className="uppercase rounded-full border-[#E5DCCB] text-[#8C7654] text-[10px] tracking-widest px-3 py-1 font-bold"
             >
-              Back to Dashboard
-            </Button>
+              Access Restricted
+            </Badge>
+            <h1
+              className="text-2xl md:text-3xl font-heading font-bold tracking-tight"
+            >
+              Not Authorized
+            </h1>
+            <p className="text-xs md:text-sm leading-relaxed">
+              You are not authorized to access this feature. Nyra AI is reserved for workspace owners and managers.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Link to="/">
+              <Button
+                variant="outline"
+                className="w-full h-11 border-[#E5DCCB] rounded-2xl text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B] font-bold text-xs uppercase tracking-wider transition-all"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Go to Home
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

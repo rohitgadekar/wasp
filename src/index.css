@@ -289,6 +289,7 @@ Retrieved 2026-04-21, License - CC BY-SA 3.0
   border: 1px dashed #a48841;
   outline: none;
 }
+
 /* Force Autofill background to match theme */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -301,10 +302,13 @@ input:-webkit-autofill:active {
 }
 
 @keyframes bounce-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(-5%);
     animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
   }
+
   50% {
     transform: translateY(0);
     animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
@@ -322,11 +326,13 @@ input:-webkit-autofill:active {
     transform: translateY(16px) scale(0.94);
     filter: blur(4px);
   }
+
   60% {
     opacity: 1;
     transform: translateY(-3px) scale(1.01);
     filter: blur(0px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -340,6 +346,7 @@ input:-webkit-autofill:active {
     transform: translateX(0) scale(1);
     filter: blur(0px);
   }
+
   100% {
     opacity: 0;
     transform: translateX(-24px) scale(0.95);
@@ -348,8 +355,13 @@ input:-webkit-autofill:active {
 }
 
 @keyframes toast-progress {
-  from { transform: scaleX(1); }
-  to   { transform: scaleX(0); }
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
 }
 
 .animate-toast-in {
@@ -364,3 +376,16 @@ input:-webkit-autofill:active {
   animation: toast-progress 4s linear forwards;
 }
 
+@keyframes loading-bar {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(340%);
+  }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 1.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}

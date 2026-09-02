@@ -15,16 +15,16 @@
   },
   "rewrites": [
     {
-      "source": "/s/:id",
-      "destination": "/api/snippet?id=:id"
+      "source": "/s/:id*",
+      "destination": "/api/snippet?id=:id*"
     },
     {
-      "source": "/script/:id",
-      "destination": "/api/script?id=:id"
+      "source": "/script/:id*",
+      "destination": "/api/script?id=:id*"
     },
     {
-      "source": "/w/:id",
-      "destination": "/api/wiki?id=:id"
+      "source": "/w/:id*",
+      "destination": "/api/wiki?id=:id*"
     },
     {
       "source": "/p/status",

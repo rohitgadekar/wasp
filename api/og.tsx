@@ -54,6 +54,7 @@ export default async function handler(request: Request) {
                                 fontSize: 28,
                                 lineHeight: 1.4,
                                 maxWidth: '90%',
+                                marginTop: 20,
                             }}
                         >
                             {description}

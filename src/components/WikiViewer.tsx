@@ -24,52 +24,133 @@ interface WikiPage {
     };
 }
 
+const decodeSafe = (str?: string) => {
+    if (!str) return '';
+    try {
+        return decodeURIComponent(str);
+    } catch {
+        return str;
+    }
+};
+
 const WikiPageViewer = () => {
     const { id } = useParams<{ id: string }>();
     const [page, setPage] = useState<WikiPage | any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    useTitle(page?.title || 'Wiki & Documentation', "Wikipedia");
+    const decodedId = decodeSafe(id);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedId);
+    const currentTitle = page?.title || (!isUuid && decodedId ? decodedId : 'Wiki & Documentation');
+
+    useTitle(currentTitle, page?.category || "Wikipedia");
 
     useEffect(() => {
         if (!id) return;
 
         const fetchPage = async () => {
             setLoading(true);
-            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-            let query = supabase
-                .from('wiki_pages')
-                .select(`
-                    *,
-                    profiles (email, full_name, avatar)
-                `);
+            setError(false);
 
-            if (isUuid) {
-                query = query.eq('id', id);
-            } else {
-                query = query.eq('title', decodeURIComponent(id));
-            }
+            try {
+                let query = supabase
+                    .from('wiki_pages')
+                    .select(`
+                        *,
+                        profiles (email, full_name, avatar)
+                    `);
 
-            const { data, error: fetchError } = await query.limit(1).maybeSingle();
+                if (isUuid) {
+                    query = query.eq('id', decodedId);
+                } else {
+                    query = query.eq('title', decodedId);
+                }
 
-            if (fetchError || !data) {
+                let { data, error: fetchError } = await query.limit(1).maybeSingle();
+
+                if ((fetchError || !data) && !isUuid) {
+                    const retry = await supabase
+                        .from('wiki_pages')
+                        .select(`
+                            *,
+                            profiles (email, full_name, avatar)
+                        `)
+                        .ilike('title', decodedId)
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (retry.data) {
+                        data = retry.data;
+                        fetchError = null;
+                    }
+                }
+
+                if (fetchError || !data) {
+                    setError(true);
+                } else {
+                    setPage(data);
+                }
+            } catch (err) {
+                console.error('Error fetching wiki page:', err);
                 setError(true);
-            } else {
-                setPage(data);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         fetchPage();
-    }, [id]);
+    }, [id, decodedId, isUuid]);
 
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
-                <div className="relative">
-                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
-                    <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="relative flex h-16 w-16 items-center justify-center">
+
+                    {/* Recessed circular track */}
+                    <div
+                        className="
+        absolute inset-0 rounded-full
+        shadow-[
+          inset_0_2px_3px_rgba(0,0,0,0.10),
+          inset_0_-2px_3px_rgba(255,255,255,0.75),
+          0_1px_2px_rgba(255,255,255,0.6)
+        ]
+      "
+                    />
+
+                    {/* Soft gold depth */}
+                    <div
+                        className="
+        absolute inset-[5px] rounded-full
+        bg-[#C9A66B]/10
+        blur-[4px]
+      "
+                    />
+
+                    {/* Main embossed loader */}
+                    <Loader2
+                        className="relative z-10 h-10 w-10 animate-spin"
+                        style={{
+                            color: '#C9A66B',
+                            strokeWidth: 2.5,
+                            filter: `
+          drop-shadow(0 1px 1px rgba(120,90,45,0.28))
+          drop-shadow(0 -1px 0 rgba(255,255,255,0.65))
+        `,
+                        }}
+                    />
+
+                    {/* Metallic highlight */}
+                    <div
+                        className="
+        pointer-events-none absolute inset-[11px]
+        rounded-full
+        bg-gradient-to-br
+        from-white/35
+        via-transparent
+        to-[#9D7845]/10
+      "
+                    />
                 </div>
             </div>
         );

@@ -827,7 +827,7 @@ const DailyStatus = () => {
         <div className="relative min-h-screen">
 
             {/* Floating Actions Hub */}
-            {isSuperUser && !isHoliday && (
+            {isOwner && !isHoliday && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-2 backdrop-blur-2xl px-2 py-2 rounded-full shadow-[0_20px_50px_rgba(197,168,128,0.15)] animate-in slide-in-from-top-8 duration-700">
                     <Button variant="ghost" className="rounded-full px-4 h-10 font-sans font-bold text-[9px] uppercase tracking-wider text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={exportToPDF}>
                         <FileDown className="w-2 h-2 mr-2 text-[#C5A880]" /> PDF

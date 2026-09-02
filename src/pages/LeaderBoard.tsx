@@ -7,6 +7,7 @@ import { SiJira as JiraIcon } from 'react-icons/si';
 import { Loader2 } from 'lucide-react';
 import { useTitle } from '@/hooks/use-title';
 import { useQuery } from '@tanstack/react-query';
+import Loader from '@/components/Loader';
 
 interface LeaderboardEntry {
     user_id: string;
@@ -96,12 +97,7 @@ const Leaderboard = () => {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="relative">
-                    <Loader2 className="h-12 w-12 animate-spin relative z-10" style={{ color: '#C5A880' }} />
-                    <div className="absolute inset-0 blur-2xl animate-pulse rounded-full" style={{ background: 'rgba(197,168,128,0.2)' }} />
-                </div>
-            </div>
+            <Loader />
         );
     }
 

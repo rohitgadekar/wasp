@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import {
   differenceInCalendarDays,
   eachDayOfInterval,
   endOfMonth,
   format,
+  isSameDay,
+  isValid,
   isWeekend,
   parseISO,
   startOfDay,
@@ -33,15 +35,19 @@ import {
 } from "recharts";
 import {
   Activity,
+  ArrowLeft,
   CalendarDays,
   CalendarRange,
   Check,
   ChevronDown,
   ClipboardCheck,
   Download,
+  FileDown,
   FileSearch,
+  Image as ImageIcon,
   Loader2,
   Palmtree,
+  Share2,
   ShieldAlert,
   Target,
   TrendingUp,
@@ -54,6 +60,7 @@ import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTitle } from "@/hooks/use-title";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -86,6 +93,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import Loader from "@/components/Loader";
 
 interface ProfileOption {
   id: string;
@@ -106,6 +114,12 @@ interface Leave {
   start_date: string;
   end_date: string;
   type: string;
+}
+
+interface Holiday {
+  id?: string;
+  date: string;
+  description?: string;
 }
 
 type RangeMode = "week" | "month" | "custom";
@@ -187,15 +201,67 @@ const getCaseKey = (link: string) =>
 
 const AdvancedAnalytics = () => {
   const { role, loading: roleLoading, isOwner } = useUserRole();
-  const initialMonth = getPresetRange("month");
-  const [rangeMode, setRangeMode] = useState<RangeMode>("month");
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: initialMonth.start,
-    to: initialMonth.end,
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+
+  const [rangeMode, setRangeMode] = useState<RangeMode>(() => {
+    const modeParam = searchParams.get("mode");
+    if (modeParam === "week" || modeParam === "month" || modeParam === "custom") {
+      return modeParam;
+    }
+    return "month";
   });
-  const [selectedUserId, setSelectedUserId] = useState("");
+
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+    const modeParam = searchParams.get("mode");
+    const initialRange =
+      modeParam === "week" ? getPresetRange("week") : getPresetRange("month");
+
+    if (fromParam) {
+      const parsedFrom = parseISO(fromParam);
+      if (isValid(parsedFrom)) {
+        if (toParam) {
+          const parsedTo = parseISO(toParam);
+          if (isValid(parsedTo)) {
+            return { from: startOfDay(parsedFrom), to: startOfDay(parsedTo) };
+          }
+        }
+        return { from: startOfDay(parsedFrom), to: startOfDay(parsedFrom) };
+      }
+    }
+    return {
+      from: initialRange.start,
+      to: initialRange.end,
+    };
+  });
+
+  const [selectedUserId, setSelectedUserId] = useState<string>(() => {
+    return searchParams.get("userId") || searchParams.get("user") || "";
+  });
+
   const [isExporting, setIsExporting] = useState(false);
   const pdfReportRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Synchronize URL parameters with active report selections
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedUserId) {
+      params.set("userId", selectedUserId);
+    }
+    if (dateRange.from) {
+      params.set("from", normalizeDate(dateRange.from));
+    }
+    if (dateRange.to) {
+      params.set("to", normalizeDate(dateRange.to));
+    }
+    if (rangeMode) {
+      params.set("mode", rangeMode);
+    }
+    setSearchParams(params, { replace: true });
+  }, [selectedUserId, dateRange, rangeMode, setSearchParams]);
 
   const startDate = dateRange.from ? normalizeDate(dateRange.from) : "";
   const endDate = dateRange.to ? normalizeDate(dateRange.to) : startDate;
@@ -274,6 +340,26 @@ const AdvancedAnalytics = () => {
     enabled: !!selectedUserId && hasCompleteRange,
   });
 
+  const { data: holidaysData = { map: {}, list: [] }, isLoading: loadingHolidays } = useQuery({
+    queryKey: ["advanced_analytics_holidays", startDate, endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("holidays" as any)
+        .select("*")
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .order("date", { ascending: true });
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      const list = (data || []) as Holiday[];
+      list.forEach((h) => {
+        map[h.date] = h.description || "Holiday";
+      });
+      return { map, list };
+    },
+    enabled: hasCompleteRange,
+  });
+
   const selectedProfile = profiles.find(
     (profile) => profile.id === selectedUserId
   );
@@ -288,6 +374,7 @@ const AdvancedAnalytics = () => {
         totalUpdates: 0,
         totalCases: 0,
         submittedDays: 0,
+        submittedWorkDays: 0,
         activeDays: 0,
         periodDays: 0,
         leaveDays: 0,
@@ -323,6 +410,19 @@ const AdvancedAnalytics = () => {
       const dayLeaves = leaves.filter(
         (leave) => date >= leave.start_date && date <= leave.end_date
       );
+      const isHoliday = !!holidaysData.map[date];
+      const holidayDescription = holidaysData.map[date];
+
+      const isOnLeave = dayLeaves.length > 0;
+      const hasValidLog = reportsForDay.some((r) => {
+        const isAutoLeave =
+          r.new_dev?.length === 1 &&
+          r.new_dev[0] === "ON LEAVE" &&
+          r.updates?.length === 1 &&
+          r.updates[0] === "ON LEAVE";
+        return !isAutoLeave;
+      });
+      const isSubmitted = !isOnLeave && reportsForDay.length > 0 && hasValidLog;
 
       return {
         date,
@@ -331,8 +431,10 @@ const AdvancedAnalytics = () => {
         new_dev: newDev.length,
         updates: updates.length,
         total: newDev.length + updates.length,
-        submitted: reportsForDay.length > 0,
+        submitted: isSubmitted,
         isWorkday: !isWeekend(day),
+        isHoliday,
+        holidayDescription,
         leaves: dayLeaves,
         newDevLinks: newDev,
         updateLinks: updates,
@@ -345,11 +447,12 @@ const AdvancedAnalytics = () => {
     const activeDays = daily.filter((day) => day.total > 0).length;
     const leaveDays = daily.filter((day) => day.leaves.length > 0).length;
     const availableWorkDays = daily.filter(
-      (day) => day.isWorkday && !day.leaves.length
+      (day) => day.isWorkday && !day.isHoliday
     ).length;
-    const submittedWorkDays = daily.filter(
-      (day) => day.isWorkday && !day.leaves.length && day.submitted
-    ).length;
+    const submittedWorkDays = Math.max(0, availableWorkDays - leaveDays);
+    const submissionRate = availableWorkDays
+      ? Math.round((submittedWorkDays / availableWorkDays) * 100)
+      : 0;
     const peakDay = daily.reduce<(typeof daily)[number] | null>(
       (best, day) => (!best || day.total > best.total ? day : best),
       null
@@ -374,6 +477,11 @@ const AdvancedAnalytics = () => {
         );
     });
 
+    const holidayDaysCount = daily.filter((d) => d.isHoliday).length;
+    if (holidayDaysCount > 0) {
+      leaveTypeTotals.set("Company Off", holidayDaysCount);
+    }
+
     const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const weekdayData = weekdays.map((name) => {
       const matchingDays = daily.filter((day) => day.day === name);
@@ -395,6 +503,7 @@ const AdvancedAnalytics = () => {
       totalUpdates,
       totalCases: totalNewDev + totalUpdates,
       submittedDays,
+      submittedWorkDays,
       activeDays,
       periodDays: daily.length,
       leaveDays,
@@ -411,7 +520,73 @@ const AdvancedAnalytics = () => {
           ? { label: peakDay.label, total: peakDay.total }
           : null,
     };
-  }, [dateRange, leaves, reports]);
+  }, [dateRange, leaves, reports, holidaysData]);
+
+  const timeAwayItems = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return [];
+
+    const items: Array<{
+      id: string;
+      type: string;
+      description?: string;
+      startDate: Date;
+      endDate: Date;
+      days: number;
+      dateRangeText: string;
+      isHoliday: boolean;
+    }> = [];
+
+    leaves.forEach((leave) => {
+      const rawStart = parseISO(leave.start_date);
+      const rawEnd = parseISO(leave.end_date);
+      const leaveStart =
+        rawStart < startOfDay(dateRange.from!)
+          ? startOfDay(dateRange.from!)
+          : rawStart;
+      const leaveEnd =
+        rawEnd > startOfDay(dateRange.to!)
+          ? startOfDay(dateRange.to!)
+          : rawEnd;
+      const days = differenceInCalendarDays(leaveEnd, leaveStart) + 1;
+      if (days > 0) {
+        items.push({
+          id: `leave-${leave.id}`,
+          type: leave.type,
+          startDate: leaveStart,
+          endDate: leaveEnd,
+          days,
+          dateRangeText: isSameDay(leaveStart, leaveEnd)
+            ? format(leaveStart, "MMM d, yyyy")
+            : `${format(leaveStart, "MMM d")} – ${format(
+              leaveEnd,
+              "MMM d, yyyy"
+            )}`,
+          isHoliday: false,
+        });
+      }
+    });
+
+    holidaysData.list.forEach((h) => {
+      const hDate = parseISO(h.date);
+      if (
+        hDate >= startOfDay(dateRange.from!) &&
+        hDate <= startOfDay(dateRange.to!)
+      ) {
+        items.push({
+          id: `holiday-${h.date}-${h.id || ""}`,
+          type: "Company Off",
+          description: h.description,
+          startDate: hDate,
+          endDate: hDate,
+          days: 1,
+          dateRangeText: format(hDate, "MMM d, yyyy"),
+          isHoliday: true,
+        });
+      }
+    });
+
+    return items.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+  }, [dateRange, leaves, holidaysData]);
 
   const workMix = [
     { name: "New Dev", value: analytics.totalNewDev },
@@ -440,22 +615,15 @@ const AdvancedAnalytics = () => {
           document
             .querySelectorAll("[data-export-hide]")
             .forEach((element) => element.remove());
-          document
-            .querySelectorAll<HTMLElement>("[data-export-expand]")
-            .forEach((element) => {
-              element.style.maxHeight = "none";
-              element.style.overflow = "visible";
-            });
         },
       });
-      // The dedicated export canvas is a compact, one-page report. It is embedded as one high-resolution PNG,
-      // so a PDF viewer can zoom into every table row without splitting the report across pages.
+
       const pdf = new jsPDF("l", "mm", "letter");
-      const margin = 8;
+      const margin = 6;
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const printableWidth = pageWidth - margin * 2;
-      const printableHeight = pageHeight - margin * 2 - 6;
+      const printableHeight = pageHeight - margin * 2;
       const image = canvas.toDataURL("image/png");
       const imageRatio = canvas.width / canvas.height;
       const printableRatio = printableWidth / printableHeight;
@@ -484,22 +652,95 @@ const AdvancedAnalytics = () => {
     }
   };
 
+  const exportToPNG = async () => {
+    if (!exportRef.current || isExporting) return;
+
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: IVORY,
+        onclone: (document) => {
+          document
+            .querySelectorAll("[data-export-hide]")
+            .forEach((element) => element.remove());
+          document
+            .querySelectorAll<HTMLElement>("[data-export-expand]")
+            .forEach((element) => {
+              element.style.maxHeight = "none";
+              element.style.overflow = "visible";
+            });
+        },
+      });
+
+      const link = document.createElement("a");
+      link.download = `analytics-${selectedProfile?.full_name?.replace(/\s+/g, "-").toLowerCase() ||
+        "report"
+        }-${startDate}-to-${endDate}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (roleLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[#C5A880]" />
-      </div>
+      <Loader />
     );
   }
 
   if (role !== "owner" && role !== "manager") {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <div
+          className="w-full max-w-md rounded-[2em] p-8 md:p-10 text-center space-y-6"
+        >
+          <div
+            className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center border shadow-inner"
+          >
+            <ShieldAlert className="w-8 h-8 text-[#C5A880]" />
+          </div>
+
+          <div className="space-y-2">
+            <Badge
+              variant="outline"
+              className="uppercase rounded-full border-[#E5DCCB] text-[#8C7654] text-[10px] tracking-widest px-3 py-1 font-bold"
+            >
+              Access Restricted
+            </Badge>
+            <h1
+              className="text-2xl md:text-3xl font-heading font-bold tracking-tight"
+              style={{ color: BROWN }}
+            >
+              Not Authorized
+            </h1>
+            <p className="text-xs md:text-sm leading-relaxed" style={{ color: BROWN_MID }}>
+              You are not authorized to view this page. Insight Studio and Advanced Analytics are reserved for workspace owners and managers.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Link to="/">
+              <Button
+                variant="outline"
+                className="w-full h-11 border-[#E5DCCB] rounded-2xl text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B] font-bold text-xs uppercase tracking-wider transition-all"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Go to Home
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
-  const isLoading = loadingReports || loadingLeaves;
+  const isLoading = loadingReports || loadingLeaves || loadingHolidays;
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <div className="max-w-[1500px] mx-auto p-6 md:p-12 space-y-8 relative z-10">
+      <div ref={exportRef} className="max-w-[1500px] mx-auto p-6 md:p-12 space-y-8 relative z-10">
         <div className="text-center space-y-4">
           <div>
             <h1
@@ -518,6 +759,7 @@ const AdvancedAnalytics = () => {
         </div>
 
         <Card
+          data-export-hide
           className="border rounded-3xl overflow-visible shadow-xl"
           style={{ background: IVORY, borderColor: GOLD_LIGHT }}
         >
@@ -732,8 +974,36 @@ const AdvancedAnalytics = () => {
                   disabled={isExporting}
                   className="h-9 border-[#E5DCCB] rounded-3xl text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B]"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <FileDown className="w-4 h-4 mr-2" />
                   {isExporting ? "Preparing…" : "Export PDF"}
+                </Button>
+                <Button
+                  data-export-hide
+                  type="button"
+                  variant="outline"
+                  onClick={exportToPNG}
+                  disabled={isExporting}
+                  className="h-9 border-[#E5DCCB] rounded-3xl text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B]"
+                >
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  {isExporting ? "Preparing…" : "Export PNG"}
+                </Button>
+                <Button
+                  data-export-hide
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast({
+                      title: "Direct link copied!",
+                      description:
+                        "Anyone opening this link will see this exact report and timeframe.",
+                    });
+                  }}
+                  className="h-9 border-[#E5DCCB] rounded-3xl text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B]"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share Link
                 </Button>
               </div>
             </div>
@@ -750,7 +1020,7 @@ const AdvancedAnalytics = () => {
                   label: "Reporting Rate",
                   value: `${analytics.submissionRate}%`,
                   icon: ClipboardCheck,
-                  note: `${analytics.submittedDays} submitted days`,
+                  note: `${analytics.submittedWorkDays} / ${analytics.availableWorkDays} working days`,
                 },
                 {
                   label: "Leaves Taken",
@@ -1080,7 +1350,7 @@ const AdvancedAnalytics = () => {
                     Time away in selected timeframe
                   </CardTitle>
                   <CardDescription>
-                    Every leave record is clipped to the dates selected above
+                    Every leave record and company holiday is clipped to the dates selected above
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1092,53 +1362,51 @@ const AdvancedAnalytics = () => {
                     <Table>
                       <TableHeader className="sticky top-0 bg-[#FAF9F5] z-10">
                         <TableRow>
-                          <TableHead>Leave type</TableHead>
+                          <TableHead>Type</TableHead>
                           <TableHead>Dates in range</TableHead>
                           <TableHead className="text-right">Days</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {leaves.length ? (
-                          leaves.map((leave) => {
-                            const leaveStart =
-                              parseISO(leave.start_date) <
-                                startOfDay(dateRange.from!)
-                                ? startOfDay(dateRange.from!)
-                                : parseISO(leave.start_date);
-                            const leaveEnd =
-                              parseISO(leave.end_date) >
-                                startOfDay(dateRange.to!)
-                                ? startOfDay(dateRange.to!)
-                                : parseISO(leave.end_date);
-                            const days =
-                              differenceInCalendarDays(leaveEnd, leaveStart) +
-                              1;
-                            return (
-                              <TableRow key={leave.id}>
-                                <TableCell>
+                        {timeAwayItems.length ? (
+                          timeAwayItems.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
                                   <Badge
                                     variant="outline"
-                                    className="border-[#E5DCCB] text-[#8C7654]"
+                                    className={
+                                      item.isHoliday
+                                        ? "border-[#DFCBB5] bg-[#FAF9F5] text-[#8C7654] font-semibold"
+                                        : "border-[#E5DCCB] text-[#8C7654]"
+                                    }
                                   >
-                                    {leave.type}
+                                    {item.type}
                                   </Badge>
-                                </TableCell>
-                                <TableCell
-                                  className="text-sm"
-                                  style={{ color: BROWN }}
-                                >
-                                  {format(leaveStart, "MMM d")} –{" "}
-                                  {format(leaveEnd, "MMM d, yyyy")}
-                                </TableCell>
-                                <TableCell
-                                  className="text-right font-bold"
-                                  style={{ color: BROWN }}
-                                >
-                                  {days}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
+                                  {item.isHoliday &&
+                                    item.description &&
+                                    item.description !== "Holiday" &&
+                                    item.description !== "Company Off" && (
+                                      <span className="text-xs text-[#8C7654] italic">
+                                        ({item.description})
+                                      </span>
+                                    )}
+                                </div>
+                              </TableCell>
+                              <TableCell
+                                className="text-sm"
+                                style={{ color: BROWN }}
+                              >
+                                {item.dateRangeText}
+                              </TableCell>
+                              <TableCell
+                                className="text-right font-bold"
+                                style={{ color: BROWN }}
+                              >
+                                {item.days}
+                              </TableCell>
+                            </TableRow>
+                          ))
                         ) : (
                           <TableRow>
                             <TableCell
@@ -1150,7 +1418,7 @@ const AdvancedAnalytics = () => {
                                 className="text-xs font-bold uppercase tracking-widest"
                                 style={{ color: BROWN_LIGHT }}
                               >
-                                No leave taken
+                                No time away recorded
                               </span>
                             </TableCell>
                           </TableRow>
@@ -1171,7 +1439,7 @@ const AdvancedAnalytics = () => {
                   Detailed Breakdown
                 </CardTitle>
                 <CardDescription>
-                  Daily status activity and leave taken for the selected user
+                  Daily status activity, company off days, and leave taken for the selected user
                   and timeframe
                 </CardDescription>
               </CardHeader>
@@ -1188,7 +1456,7 @@ const AdvancedAnalytics = () => {
                         <TableHead>Status</TableHead>
                         <TableHead>New Dev</TableHead>
                         <TableHead>Updates</TableHead>
-                        <TableHead>Leave</TableHead>
+                        <TableHead>Leave / Time Off</TableHead>
                         <TableHead className="text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1200,7 +1468,7 @@ const AdvancedAnalytics = () => {
                           <TableRow
                             key={day.date}
                             className={
-                              day.leaves.length
+                              day.leaves.length || day.isHoliday
                                 ? "bg-[#C5A880]/[0.04]"
                                 : undefined
                             }
@@ -1209,12 +1477,16 @@ const AdvancedAnalytics = () => {
                               className="font-bold whitespace-nowrap"
                               style={{ color: BROWN }}
                             >
-                              {format(parseISO(day.date), "MMM d, yyyy")}
+                              {format(parseISO(day.date), "PPPP")}
                             </TableCell>
                             <TableCell>
                               {day.leaves.length ? (
                                 <Badge className="bg-[#F6ECD8] text-[#8C6839] hover:bg-[#F6ECD8] border-0">
                                   On Leave
+                                </Badge>
+                              ) : day.isHoliday ? (
+                                <Badge className="bg-[#EFE8DC] text-[#7A6241] hover:bg-[#EFE8DC] border-0">
+                                  Company Off
                                 </Badge>
                               ) : !day.isWorkday ? (
                                 <Badge className="bg-[#EEF0F5] text-[#657083] hover:bg-[#EEF0F5] border-0">
@@ -1248,6 +1520,15 @@ const AdvancedAnalytics = () => {
                                     </Badge>
                                   ))}
                                 </div>
+                              ) : day.isHoliday ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-[#DFCBB5] bg-[#FAF9F5] text-[#8C7654]"
+                                >
+                                  {day.holidayDescription && day.holidayDescription !== "Holiday"
+                                    ? day.holidayDescription
+                                    : "Company Off"}
+                                </Badge>
                               ) : (
                                 <span className="text-xs text-muted-foreground">
                                   —
@@ -1275,87 +1556,107 @@ const AdvancedAnalytics = () => {
       <div
         ref={pdfReportRef}
         aria-hidden="true"
-        className="fixed top-0 w-[1600px] overflow-hidden bg-[#FDFDFB] p-10 font-sans text-[#2C241B]"
+        className="fixed top-0 w-[1400px] overflow-hidden bg-[#FDFDFB] p-6 font-sans text-[#2C241B]"
         style={{ left: "-10000px" }}
       >
-        <header className="relative z-10 flex items-start justify-between border-b-2 border-[#C5A880] pb-5">
+        <header className="flex items-start justify-between border-b-2 border-[#C5A880] pb-3 mb-3">
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-[0.35em] text-[#8C7654]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8C7654]">
               Insight Studio | Powered by Wasp
             </p>
-            <h1 className="mt-1 text-[34px] font-bold tracking-tight">
+            <h1 className="text-[24px] font-bold tracking-tight text-[#2C241B]">
               Performance & Availability Report
             </h1>
-            <p className="mt-2 text-[15px] text-[#8C7654]">
-              {selectedProfile?.full_name || selectedProfile?.email} ·{" "}
-              {rangeLabel}
+            <p className="text-[12px] text-[#8C7654] font-medium">
+              {selectedProfile?.full_name || selectedProfile?.email} · {rangeLabel}
             </p>
           </div>
-          <div className="rounded-xl border border-[#E5DCCB] bg-[#FAF9F5] px-5 py-3 text-right">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#A59582]">
+          <div className="rounded-lg border border-[#E5DCCB] bg-[#FAF9F5] px-4 py-2 text-right">
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#A59582]">
               Report generated
             </p>
-            <p className="mt-1 text-[13px] font-semibold">
+            <p className="text-[12px] font-bold text-[#2C241B]">
               {format(new Date(), "MMM d, yyyy")}
             </p>
           </div>
         </header>
 
-        <section className="relative z-10 mt-5 grid grid-cols-6 gap-3">
+        {/* 6 Key Metrics Row */}
+        <section className="grid grid-cols-6 gap-2.5 mb-3">
           {[
-            ["Total Cases", analytics.totalCases],
-            ["New Dev", analytics.totalNewDev],
-            ["Updates", analytics.totalUpdates],
-            ["Reporting Rate", `${analytics.submissionRate}%`],
-            ["Leave Days", analytics.leaveDays],
-            ["Active Days", analytics.activeDays],
-          ].map(([label, value]) => (
+            {
+              label: "Total Cases",
+              value: analytics.totalCases,
+              note: `${analytics.activeDays} active days`,
+            },
+            {
+              label: "Reporting Rate",
+              value: `${analytics.submissionRate}%`,
+              note: `${analytics.submittedWorkDays} / ${analytics.availableWorkDays} work days`,
+            },
+            {
+              label: "Leaves Taken",
+              value: analytics.leaveDays,
+              note: `${analytics.leaveRecords} record${analytics.leaveRecords === 1 ? "" : "s"}`,
+            },
+            {
+              label: "New Dev",
+              value: analytics.totalNewDev,
+              note: `${analytics.totalCases ? Math.round((analytics.totalNewDev / analytics.totalCases) * 100) : 0}% of total`,
+            },
+            {
+              label: "Updates",
+              value: analytics.totalUpdates,
+              note: `${analytics.totalCases ? Math.round((analytics.totalUpdates / analytics.totalCases) * 100) : 0}% of total`,
+            },
+            {
+              label: "Avg / Active Day",
+              value: analytics.averagePerActiveDay,
+              note: analytics.peakDay ? `Peak: ${analytics.peakDay.label} (${analytics.peakDay.total})` : "—",
+            },
+          ].map((item) => (
             <div
-              key={label}
-              className="rounded-xl border border-[#E5DCCB] bg-white px-4 py-3"
+              key={item.label}
+              className="rounded-lg border border-[#E5DCCB] bg-white px-3 py-2"
             >
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#A59582]">
-                {label}
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#A59582]">
+                {item.label}
               </p>
-              <p className="mt-1 text-[25px] font-bold text-[#2C241B]">
-                {value}
+              <p className="text-[20px] font-bold text-[#2C241B] mt-0.5 leading-none">
+                {item.value}
+              </p>
+              <p className="text-[9px] text-[#8C7654] mt-1 truncate">
+                {item.note}
               </p>
             </div>
           ))}
         </section>
 
-        <section className="relative z-10 mt-5 grid grid-cols-[1.65fr_1fr] gap-5">
-          <div className="rounded-xl border border-[#E5DCCB] bg-white p-4">
-            <div className="flex items-baseline justify-between">
-              <div>
-                <h2 className="text-[17px] font-bold">Daily Case Throughput</h2>
-                <p className="text-[11px] text-[#8C7654]">
-                  New development and updates throughout the selected period
-                </p>
-              </div>
-              <p className="text-[11px] font-semibold text-[#8C7654]">
+        {/* Middle Section: 3-column Overview */}
+        <section className="grid grid-cols-[1.5fr_1fr_1.1fr] gap-3 mb-3">
+          {/* Daily Throughput Chart */}
+          <div className="rounded-lg border border-[#E5DCCB] bg-white p-3">
+            <div className="flex items-center justify-between border-b border-[#E5DCCB] pb-1.5 mb-1.5">
+              <h2 className="text-[12px] font-bold text-[#2C241B]">Daily Case Throughput</h2>
+              <span className="text-[9px] font-bold text-[#8C7654]">
                 {analytics.periodDays} days
-              </p>
+              </span>
             </div>
-            <div className="mt-2 h-[190px]">
+            <div className="h-[140px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={analytics.daily}
-                  margin={{ top: 8, right: 4, left: -22, bottom: 0 }}
+                  margin={{ top: 5, right: 4, left: -24, bottom: 0 }}
                 >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={GOLD_LIGHT}
-                    vertical={false}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke={GOLD_LIGHT} vertical={false} />
                   <XAxis
                     dataKey="label"
                     interval="preserveStartEnd"
-                    tick={{ fontSize: 9, fill: BROWN_LIGHT }}
+                    tick={{ fontSize: 8, fill: BROWN_LIGHT }}
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fontSize: 9, fill: BROWN_LIGHT }}
+                    tick={{ fontSize: 8, fill: BROWN_LIGHT }}
                   />
                   <Tooltip />
                   <Bar
@@ -1364,7 +1665,7 @@ const AdvancedAnalytics = () => {
                     stackId="cases"
                     fill={GOLD}
                     shape={renderRoundedBar}
-                    maxBarSize={48}
+                    maxBarSize={32}
                   />
                   <Bar
                     dataKey="updates"
@@ -1372,120 +1673,196 @@ const AdvancedAnalytics = () => {
                     stackId="cases"
                     fill={BROWN_MID}
                     shape={renderRoundedBar}
-                    maxBarSize={48}
+                    maxBarSize={32}
                   />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="rounded-xl border border-[#E5DCCB] bg-[#FAF9F5] p-4">
-            <h2 className="text-[17px] font-bold">Period Snapshot</h2>
-            <div className="mt-3 space-y-3 text-[12px]">
-              <div className="flex justify-between border-b border-[#E5DCCB] pb-2">
-                <span className="text-[#8C7654]">Average per active day</span>
-                <strong>{analytics.averagePerActiveDay}</strong>
+
+          {/* Period Snapshot Summary */}
+          <div className="rounded-lg border border-[#E5DCCB] bg-[#FAF9F5] p-3 text-[10.5px]">
+            <h2 className="text-[12px] font-bold text-[#2C241B] border-b border-[#E5DCCB] pb-1.5 mb-2">
+              Period Snapshot
+            </h2>
+            <div className="space-y-1.5">
+              <div className="flex justify-between border-b border-[#E5DCCB]/60 pb-1">
+                <span className="text-[#8C7654]">Average / Active Day</span>
+                <strong className="text-[#2C241B]">{analytics.averagePerActiveDay} cases</strong>
               </div>
-              <div className="flex justify-between border-b border-[#E5DCCB] pb-2">
-                <span className="text-[#8C7654]">Submitted reports</span>
-                <strong>{analytics.submittedDays}</strong>
+              <div className="flex justify-between border-b border-[#E5DCCB]/60 pb-1">
+                <span className="text-[#8C7654]">Reporting Coverage</span>
+                <strong className="text-[#2C241B]">{analytics.submittedWorkDays} / {analytics.availableWorkDays} work days ({analytics.submissionRate}%)</strong>
               </div>
-              <div className="flex justify-between border-b border-[#E5DCCB] pb-2">
-                <span className="text-[#8C7654]">Peak throughput</span>
-                <strong>
-                  {analytics.peakDay
-                    ? `${analytics.peakDay.label} (${analytics.peakDay.total})`
-                    : "—"}
+              <div className="flex justify-between border-b border-[#E5DCCB]/60 pb-1">
+                <span className="text-[#8C7654]">Peak Throughput</span>
+                <strong className="text-[#2C241B]">
+                  {analytics.peakDay ? `${analytics.peakDay.label} (${analytics.peakDay.total} cases)` : "—"}
                 </strong>
               </div>
-              <div>
-                <p className="mb-1 text-[#8C7654]">Work mix</p>
-                <p className="font-semibold">
-                  {analytics.totalNewDev} New Dev · {analytics.totalUpdates}{" "}
-                  Updates
-                </p>
+              <div className="flex justify-between pt-0.5">
+                <span className="text-[#8C7654]">Work Mix Ratio</span>
+                <strong className="text-[#2C241B]">
+                  {analytics.totalNewDev} Dev · {analytics.totalUpdates} Upd
+                </strong>
               </div>
-              <div>
-                <p className="mb-1 text-[#8C7654]">Leave summary</p>
-                <p className="font-semibold">
-                  {analytics.leaveTypes.length
-                    ? analytics.leaveTypes
-                      .map((leave) => `${leave.name}: ${leave.value}d`)
-                      .join(" · ")
-                    : "No leave recorded"}
-                </p>
+            </div>
+          </div>
+
+          {/* Time Away & Holidays Table */}
+          <div className="rounded-lg border border-[#E5DCCB] bg-white p-3 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between border-b border-[#E5DCCB] pb-1.5 mb-2">
+                <h2 className="text-[12px] font-bold text-[#2C241B]">Time Away & Holidays</h2>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#8C7654]">
+                  {timeAwayItems.length} {timeAwayItems.length === 1 ? "Record" : "Records"}
+                </span>
               </div>
+              {timeAwayItems.length > 0 ? (
+                <div className="space-y-1 max-h-[125px] overflow-hidden text-[9px]">
+                  {timeAwayItems.slice(0, 4).map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between py-0.5 border-b border-[#E5DCCB]/40"
+                    >
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span
+                          className={`px-1.5 py-0.2 rounded text-[7.5px] font-bold uppercase ${item.isHoliday
+                            ? "bg-[#EFE8DC] text-[#7A6241]"
+                            : "bg-[#F6ECD8] text-[#8C6839]"
+                            }`}
+                        >
+                          {item.type}
+                        </span>
+                        <span className="text-[#8C7654] truncate">
+                          {item.dateRangeText}
+                        </span>
+                      </div>
+                      <span className="font-bold text-[#2C241B] shrink-0 ml-1.5">
+                        {item.days}d
+                      </span>
+                    </div>
+                  ))}
+                  {timeAwayItems.length > 4 && (
+                    <p className="text-[8px] text-[#8C7654] italic text-right pt-0.5">
+                      +{timeAwayItems.length - 4} more records
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="h-[105px] flex items-center justify-center text-center">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-[#A59582]">
+                    No time away in range
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        <section className="relative z-10 mt-5 rounded-xl border border-[#E5DCCB] bg-white p-4">
-          <div className="mb-3 flex items-end justify-between">
+        {/* Bottom Section: Detailed Breakdown (2-column dense table) */}
+        <section className="rounded-lg border border-[#E5DCCB] bg-white p-3">
+          <div className="flex items-baseline justify-between border-b border-[#E5DCCB] pb-1.5 mb-2">
             <div>
-              <h2 className="text-[17px] font-bold">Detailed Breakdown</h2>
-              <p className="text-[11px] text-[#8C7654]">
-                All status logs, leave, and scheduled week-offs for the selected
-                timeframe
+              <h2 className="text-[12px] font-bold text-[#2C241B]">
+                Detailed Daily Breakdown
+              </h2>
+              <p className="text-[9px] text-[#8C7654]">
+                Status logs, declared holidays, and approved leave records
               </p>
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#A59582]">
-              {analytics.daily.length} records
-            </p>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#A59582]">
+              {analytics.daily.length} days total
+            </span>
           </div>
-          <table className="w-full table-fixed border-collapse text-left text-[10px]">
-            <thead>
-              <tr className="border-y border-[#E5DCCB] bg-[#FAF9F5] text-[9px] font-bold uppercase tracking-[0.12em] text-[#8C7654]">
-                <th className="w-[12%] px-2 py-2">Date</th>
-                <th className="w-[12%] px-2 py-2">Status</th>
-                <th className="w-[25%] px-2 py-2">New Dev</th>
-                <th className="w-[25%] px-2 py-2">Updates</th>
-                <th className="w-[18%] px-2 py-2">Leave</th>
-                <th className="w-[8%] px-2 py-2 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {analytics.daily
-                .slice()
-                .reverse()
-                .map((day) => (
-                  <tr
-                    key={day.date}
-                    className="border-b border-[#E5DCCB]/70 align-top"
-                  >
-                    <td className="px-2 py-1.5 font-semibold whitespace-nowrap">
-                      {format(parseISO(day.date), "EEE, MMM d")}
-                    </td>
-                    <td className="px-2 py-1.5 font-semibold">
-                      {day.leaves.length
-                        ? "On Leave"
-                        : !day.isWorkday
-                          ? "Week Off"
-                          : day.submitted
-                            ? "Submitted"
-                            : "No Log"}
-                    </td>
-                    <td className="px-2 py-1.5 break-words text-[#8C7654]">
-                      {day.newDevLinks.length
-                        ? day.newDevLinks.map(getCaseKey).join(", ")
-                        : "—"}
-                    </td>
-                    <td className="px-2 py-1.5 break-words text-[#8C7654]">
-                      {day.updateLinks.length
-                        ? day.updateLinks.map(getCaseKey).join(", ")
-                        : "—"}
-                    </td>
-                    <td className="px-2 py-1.5 text-[#8C7654]">
-                      {day.leaves.length
-                        ? day.leaves.map((leave) => leave.type).join(", ")
-                        : "—"}
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-bold">
-                      {day.total}
-                    </td>
+
+          <div
+            className={`grid ${analytics.daily.length > 15 ? "grid-cols-2 gap-3" : "grid-cols-1"
+              }`}
+          >
+            {[
+              analytics.daily.length > 15
+                ? analytics.daily.slice().reverse().slice(0, Math.ceil(analytics.daily.length / 2))
+                : analytics.daily.slice().reverse(),
+              ...(analytics.daily.length > 15
+                ? [analytics.daily.slice().reverse().slice(Math.ceil(analytics.daily.length / 2))]
+                : []),
+            ].map((subList, subIdx) => (
+              <table
+                key={subIdx}
+                className="w-full table-fixed border-collapse text-[8.5px]"
+              >
+                <thead>
+                  <tr className="border-y border-[#E5DCCB] bg-[#FAF9F5] text-[8px] font-bold uppercase tracking-wider text-[#8C7654]">
+                    <th className="w-[18%] px-1.5 py-0.5 text-left">Date</th>
+                    <th className="w-[20%] px-1.5 py-0.5 text-left">Status</th>
+                    <th className="w-[27%] px-1.5 py-0.5 text-left">New Dev</th>
+                    <th className="w-[27%] px-1.5 py-0.5 text-left">Updates</th>
+                    <th className="w-[8%] px-1.5 py-0.5 text-right">Total</th>
                   </tr>
-                ))}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {subList.map((day) => (
+                    <tr
+                      key={day.date}
+                      className={`border-b border-[#E5DCCB]/50 align-middle ${day.leaves.length || day.isHoliday
+                        ? "bg-[#C5A880]/[0.06]"
+                        : ""
+                        }`}
+                    >
+                      <td className="px-1.5 py-0.5 font-semibold whitespace-nowrap text-[#2C241B]">
+                        {format(parseISO(day.date), "MMM d, EEE")}
+                      </td>
+                      <td className="px-1.5 py-0.5">
+                        <span
+                          className={`inline-block px-1.5 py-0.2 rounded text-[7.5px] font-bold uppercase whitespace-nowrap ${day.leaves.length
+                            ? "bg-[#F6ECD8] text-[#8C6839]"
+                            : day.isHoliday
+                              ? "bg-[#EFE8DC] text-[#7A6241]"
+                              : !day.isWorkday
+                                ? "bg-[#EEF0F5] text-[#657083]"
+                                : day.submitted
+                                  ? "bg-[#E7F1E7] text-[#527052]"
+                                  : "border border-[#E5DCCB] text-[#A59582]"
+                            }`}
+                        >
+                          {day.leaves.length
+                            ? "On Leave"
+                            : day.isHoliday
+                              ? "Company Off"
+                              : !day.isWorkday
+                                ? "Week Off"
+                                : day.submitted
+                                  ? "Submitted"
+                                  : "No Log"}
+                        </span>
+                      </td>
+                      <td className="px-1.5 py-0.5 truncate text-[#8C7654]">
+                        {day.newDevLinks.length
+                          ? day.newDevLinks.map(getCaseKey).join(", ")
+                          : "—"}
+                      </td>
+                      <td className="px-1.5 py-0.5 truncate text-[#8C7654]">
+                        {day.updateLinks.length
+                          ? day.updateLinks.map(getCaseKey).join(", ")
+                          : "—"}
+                      </td>
+                      <td className="px-1.5 py-0.5 text-right font-bold text-[#2C241B]">
+                        {day.total}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ))}
+          </div>
         </section>
+
+        {/* Footer */}
+        <footer className="mt-2.5 pt-2 border-t border-[#E5DCCB] flex items-center justify-between text-[8px] text-[#A59582]">
+          <span>Confidential · Generated via Wasp Insight Studio</span>
+          <span>All metrics are synchronized with team status logs and schedule records.</span>
+        </footer>
       </div>
     </div>
   );

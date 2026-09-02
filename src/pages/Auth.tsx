@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,20 +16,36 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { signIn, signInWithPasskey, user } = useAuth();
+
+  // Determine safe redirect destination
+  const redirectParam = searchParams.get('redirect');
+  const stateFrom = (location.state as any)?.from;
+  const rawTarget =
+    redirectParam ||
+    (stateFrom
+      ? `${stateFrom.pathname || ''}${stateFrom.search || ''}${stateFrom.hash || ''}`
+      : '/');
+
+  const destination =
+    rawTarget && rawTarget.startsWith('/') && !rawTarget.startsWith('//')
+      ? rawTarget
+      : '/';
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate(destination, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, destination]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     const { error } = await signIn(email, password);
     if (!error) {
-      navigate('/');
+      navigate(destination, { replace: true });
     }
     setIsLoading(false);
   };
@@ -38,7 +54,7 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await signInWithPasskey();
     if (!error) {
-      navigate('/');
+      navigate(destination, { replace: true });
     }
     setIsLoading(false);
   };
@@ -74,11 +90,11 @@ const Auth = () => {
             <div className="border border-[#C5A880]/30 text-[#8C7654] bg-[#C5A880]/8 rounded-full px-5 py-1.5 uppercase tracking-[0.25em] text-[9px] font-sans font-semibold w-fit mx-auto md:mx-0">
               Intelligence, Engineered
             </div>
-            <h1 className="text-8xl md:text-9xl font-cinzel font-medium tracking-[0.08em] bg-clip-text text-transparent bg-gradient-to-r from-[#2C241B] via-[#94764D] to-[#2C241B] leading-none select-none">
+            <h1 className="text-8xl md:text-9xl font-cinzel font-medium tracking-[0.08em] bg-clip-text text-transparent bg-gradient-to-r from-[#2C241B] via-[#94764D] to-[#2C241B] leading-none select-none [text-shadow:2px_2px_0px_rgba(44,36,27,0.18),4px_4px_8px_rgba(44,36,27,0.25)]">
               WASP
             </h1>
             <div className="space-y-2">
-              <p className="text-2xl md:text-3xl font-serif italic text-[#5C5040] tracking-wide">
+              <p className="text-2xl md:text-3xl font-serif italic text-[#5C5040] tracking-wide ">
                 Architectural Intelligence Suite
               </p>
               <p className="text-[9px] font-sans tracking-[0.35em] font-semibold text-[#A59582] uppercase">
@@ -90,11 +106,11 @@ const Auth = () => {
           {/* Secure Handshake & Monitor Metrics */}
           <div className="hidden md:flex flex-col gap-4 pt-10 border-t border-[#E5DCCB]/60 w-full">
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-white/40   space-y-1.5 shadow-sm transition-all duration-300 hover:bg-white/60">
+              <div className="p-4 rounded-xl    space-y-1.5 shadow-xs transition-all duration-300 hover:shadow-sm">
                 <p className="text-[#8C7654] font-semibold font-sans text-[10px] tracking-wider uppercase">ENCRYPTED</p>
                 <p className="text-[10px] text-[#7A6E5D] leading-relaxed font-sans">Post-quantum secure handshake protocols active.</p>
               </div>
-              <div className="p-4 rounded-xl bg-white/40  space-y-1.5 shadow-sm transition-all duration-300 hover:bg-white/60">
+              <div className="p-4 rounded-xl  space-y-1.5 shadow-xs transition-all duration-300 hover:shadow-sm">
                 <p className="text-[#8C7654] font-semibold font-sans text-[10px] tracking-wider uppercase">MONITORED</p>
                 <p className="text-[10px] text-[#7A6E5D] leading-relaxed font-sans">Real-time contribution logging and verification.</p>
               </div>
@@ -105,19 +121,43 @@ const Auth = () => {
         {/* Divider */}
         <div className="hidden md:flex items-center justify-center h-[450px]">
           <div className="w-px h-full bg-gradient-to-b from-transparent via-[#C5A880]/30 to-transparent relative">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#FAF9F5] border border-[#E5DCCB] flex items-center justify-center shadow-lg">
-              <div className="w-2 h-2 rounded-full bg-[#C5A880]" />
+
+            <div
+              className="
+        absolute top-1/2 left-1/2
+        -translate-x-1/2 -translate-y-1/2
+        w-10 h-10 rounded-full
+
+        bg-gradient-to-br from-[#FDFDFB] via-[#FAF9F5] to-[#E8DDCB]
+
+        border border-[#D8C9B0]
+
+        shadow-
+        [-4px_-4px_8px_rgba(255,255,255,0.95),6px_6px_10px_rgba(44,36,27,0.18),inset_-2px_-2px_4px_rgba(148,118,77,0.12),inset_2px_2px_4px_rgba(255,255,255,0.9)]
+
+        flex items-center justify-center
+      "
+            >
+              <div
+                className="
+          w-3 h-3 rounded-full
+          bg-gradient-to-br from-[#E4CFA8] to-[#94764D]
+          border border-[#B99A6A]
+          shadow-[-1px_-1px_2px_rgba(255,255,255,0.8),2px_2px_4px_rgba(44,36,27,0.3)]
+        "
+              />
             </div>
+
           </div>
         </div>
 
         {/* Right Column: Authentication Card with Double Frame */}
         <div className="w-full">
-          <div className="p-3 bg-[#FAF8F5]  rounded-[2.5rem] shadow-[0_30px_90px_rgba(197,168,128,0.18)]">
-            <div className="bg-[#FDFDFB]  rounded-[2rem] overflow-hidden">
+          <div className="p-3 bg-[#FAF8F5]  rounded-[2.5rem]  shadow-2xl">
+            <div className="backdrop-blur-sm  rounded-[2rem] overflow-hidden">
               <CardHeader className="p-8">
                 <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2.5">
-                  <CardTitle className="text-2xl font-heading uppercase font-semibold tracking-[0.05em] text-[#2C241B]">
+                  <CardTitle className="text-2xl font-heading uppercase font-medium tracking-[0.05em] text-[#2C241B]">
                     Identity Verification
                   </CardTitle>
                   <CardDescription className="text-[9px] font-sans font-bold tracking-[0.18em] uppercase text-[#A59582]">
@@ -191,7 +231,7 @@ const Auth = () => {
                       type="button"
                       // variant="outline"
                       onClick={handlePasskeySignIn}
-                      className="w-full h-12 rounded-md bg-white/40 border border-[#E3DAC9] hover:bg-[#FAF8F5] text-[#2C241B] font-sans font-semibold tracking-[0.18em] text-[10px] uppercase transition-all duration-300 flex items-center justify-center gap-2"
+                      className="w-full h-12 rounded-md bg-white/40 border border-[#E3DAC9] hover:bg-[#FAF8F5] hover:text-[#8C7654] text-[#2C241B] font-sans font-semibold tracking-[0.18em] text-[10px] uppercase transition-all duration-300 flex items-center justify-center gap-2"
                       disabled={isLoading}
                     >
                       <Fingerprint className="w-4 h-4 text-[#8C7654]" />

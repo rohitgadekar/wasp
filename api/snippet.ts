@@ -2,35 +2,105 @@ import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+function safeDecode(val: string): string {
+  if (!val) return '';
+  try {
+    return decodeURIComponent(val);
+  } catch {
+    return val;
+  }
+}
+
 export default async function handler(req: any, res: any) {
-  const { id } = req.query;
+  let rawId = req.query?.id;
+  if (Array.isArray(rawId)) {
+    rawId = rawId.join('/');
+  }
+
+  // Reconstruct if split by unencoded '&'
+  if (req.query && Object.keys(req.query).length > 1) {
+    const keys = Object.keys(req.query);
+    if (keys[0] === 'id') {
+      const reconstructed = [req.query.id, ...keys.slice(1)].filter(Boolean).join('&');
+      if (reconstructed.length > (rawId?.length || 0)) {
+        rawId = reconstructed;
+      }
+    }
+  }
+
+  if (!rawId && req.url) {
+    const match = req.url.match(/(?:\/s\/|\?id=)([^?]+)/);
+    if (match && match[1]) {
+      rawId = match[1];
+    }
+  }
 
   let title = "Wasp - The Architect's Repository";
   let description = "The refined sanctuary for high-performance engineering teams";
 
-  if (id && typeof id === 'string') {
-    try {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-      let query = supabase.from('code_snippets').select('title, description');
+  if (rawId && typeof rawId === 'string') {
+    const decodedId = safeDecode(rawId).trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedId);
 
-      if (isUuid) {
-        query = query.eq('id', id);
-      } else {
-        query = query.eq('title', decodeURIComponent(id));
+    if (!isUuid && decodedId) {
+      title = decodedId;
+      description = "Code Snippet";
+    }
+
+    if (supabaseUrl && supabaseKey) {
+      try {
+        if (isUuid) {
+          const { data } = await supabase
+            .from('code_snippets')
+            .select('title, description')
+            .eq('id', decodedId)
+            .limit(1)
+            .maybeSingle();
+
+          if (data) {
+            title = data.title || title;
+            description = data.description || description;
+          }
+        } else {
+          let { data } = await supabase
+            .from('code_snippets')
+            .select('title, description')
+            .eq('title', decodedId)
+            .limit(1)
+            .maybeSingle();
+
+          if (!data && rawId !== decodedId) {
+            const rawRes = await supabase
+              .from('code_snippets')
+              .select('title, description')
+              .eq('title', rawId)
+              .limit(1)
+              .maybeSingle();
+            if (rawRes.data) data = rawRes.data;
+          }
+
+          if (!data) {
+            const ilikeRes = await supabase
+              .from('code_snippets')
+              .select('title, description')
+              .ilike('title', decodedId)
+              .limit(1)
+              .maybeSingle();
+            if (ilikeRes.data) data = ilikeRes.data;
+          }
+
+          if (data) {
+            title = data.title || title;
+            description = data.description || description;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching snippet:', err);
       }
-
-      const { data, error } = await query.limit(1).maybeSingle();
-
-      if (!error && data) {
-        title = data.title || title;
-        description = data.description || description;
-      }
-    } catch (err) {
-      console.error('Error fetching snippet:', err);
     }
   }
 
