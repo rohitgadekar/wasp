@@ -245,24 +245,6 @@ const AdvancedAnalytics = () => {
   const pdfReportRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  // Synchronize URL parameters with active report selections
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (selectedUserId) {
-      params.set("userId", selectedUserId);
-    }
-    if (dateRange.from) {
-      params.set("from", normalizeDate(dateRange.from));
-    }
-    if (dateRange.to) {
-      params.set("to", normalizeDate(dateRange.to));
-    }
-    if (rangeMode) {
-      params.set("mode", rangeMode);
-    }
-    setSearchParams(params, { replace: true });
-  }, [selectedUserId, dateRange, rangeMode, setSearchParams]);
-
   const startDate = dateRange.from ? normalizeDate(dateRange.from) : "";
   const endDate = dateRange.to ? normalizeDate(dateRange.to) : startDate;
   const hasCompleteRange = Boolean(dateRange.from && dateRange.to);
@@ -307,6 +289,55 @@ const AdvancedAnalytics = () => {
     },
     // enabled: isOwner,
   });
+
+  // Resolve user parameter from URL (name, email, or id) to selectedUserId
+  useEffect(() => {
+    const userParam = searchParams.get("user") || searchParams.get("userId");
+    if (!userParam || profiles.length === 0) return;
+
+    const normalizedParam = userParam.trim().toLowerCase();
+    const matched = profiles.find((p) => {
+      if (p.id.toLowerCase() === normalizedParam) return true;
+      if (p.full_name && p.full_name.trim().toLowerCase() === normalizedParam) return true;
+      if (p.full_name && p.full_name.trim().toLowerCase().replace(/\s+/g, "-") === normalizedParam) return true;
+      if (p.email && p.email.toLowerCase() === normalizedParam) return true;
+      return false;
+    });
+
+    if (matched && matched.id !== selectedUserId) {
+      setSelectedUserId(matched.id);
+    }
+  }, [profiles, searchParams, selectedUserId]);
+
+  const selectedProfile = profiles.find(
+    (profile) => profile.id === selectedUserId
+  );
+
+  // Synchronize URL parameters with active report selections using member name instead of raw UUID
+  useEffect(() => {
+    const params = new URLSearchParams();
+    const userIdentifier = selectedProfile?.full_name || selectedProfile?.email;
+    if (userIdentifier) {
+      params.set("user", userIdentifier);
+    } else if (selectedUserId) {
+      const existingUser = searchParams.get("user");
+      if (existingUser) {
+        params.set("user", existingUser);
+      } else {
+        params.set("user", selectedUserId);
+      }
+    }
+    if (dateRange.from) {
+      params.set("from", normalizeDate(dateRange.from));
+    }
+    if (dateRange.to) {
+      params.set("to", normalizeDate(dateRange.to));
+    }
+    if (rangeMode) {
+      params.set("mode", rangeMode);
+    }
+    setSearchParams(params, { replace: true });
+  }, [selectedUserId, selectedProfile, dateRange, rangeMode, setSearchParams, searchParams]);
 
   const { data: reports = [], isLoading: loadingReports } = useQuery({
     queryKey: ["advanced_analytics_report", selectedUserId, startDate, endDate],
@@ -359,10 +390,6 @@ const AdvancedAnalytics = () => {
     },
     enabled: hasCompleteRange,
   });
-
-  const selectedProfile = profiles.find(
-    (profile) => profile.id === selectedUserId
-  );
 
   const analytics = useMemo(() => {
     if (!dateRange.from || !dateRange.to) {
@@ -993,7 +1020,28 @@ const AdvancedAnalytics = () => {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
+                    const shareUrl = new URL(window.location.origin + window.location.pathname);
+                    const userIdentifier = selectedProfile?.full_name || selectedProfile?.email;
+                    if (userIdentifier) {
+                      shareUrl.searchParams.set("user", userIdentifier);
+                    } else if (selectedUserId) {
+                      const existingUser = searchParams.get("user");
+                      if (existingUser) {
+                        shareUrl.searchParams.set("user", existingUser);
+                      } else {
+                        shareUrl.searchParams.set("user", selectedUserId);
+                      }
+                    }
+                    if (dateRange.from) {
+                      shareUrl.searchParams.set("from", normalizeDate(dateRange.from));
+                    }
+                    if (dateRange.to) {
+                      shareUrl.searchParams.set("to", normalizeDate(dateRange.to));
+                    }
+                    if (rangeMode) {
+                      shareUrl.searchParams.set("mode", rangeMode);
+                    }
+                    navigator.clipboard.writeText(shareUrl.toString());
                     toast({
                       title: "Direct link copied!",
                       description:

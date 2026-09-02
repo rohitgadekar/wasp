@@ -37,8 +37,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Shield, Trash2, Loader2, UserCircle, Mail, Key, ShieldCheck, AlertCircle, ChevronDown, Hexagon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { UserPlus, Shield, Trash2, Loader2, UserCircle, Mail, Key, ShieldCheck, AlertCircle, ChevronDown, Hexagon, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 
@@ -363,7 +363,46 @@ const UserManagement = () => {
     return password.split('').sort(() => Math.random() - 0.5).join('');
   };
 
-  if (!userRole || (userRole !== 'moderator' && userRole !== 'owner')) return null;
+  if (!userRole || (userRole !== 'moderator' && userRole !== 'owner' && userRole !== 'manager')) return <div className="min-h-[80vh] flex items-center justify-center p-6">
+    <div
+      className="w-full max-w-md rounded-[2em] p-8 md:p-10 text-center space-y-6"
+    >
+      <div
+        className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center border shadow-inner"
+      >
+        <ShieldAlert className="w-8 h-8 text-[#C5A880]" />
+      </div>
+
+      <div className="space-y-2">
+        <Badge
+          variant="outline"
+          className="uppercase rounded-full border-[#E5DCCB] text-[#8C7654] text-[10px] tracking-widest px-3 py-1 font-bold"
+        >
+          Access Restricted
+        </Badge>
+        <h1
+          className="text-2xl md:text-3xl font-heading font-bold tracking-tight"
+        >
+          Not Authorized
+        </h1>
+        <p className="text-xs md:text-sm leading-relaxed" >
+          You are not authorized to view this page. Insight Studio and Advanced Analytics are reserved for workspace owners and managers.
+        </p>
+      </div>
+
+      <div className="pt-2">
+        <Link to="/">
+          <Button
+            variant="outline"
+            className="w-full h-11 border-[#E5DCCB] rounded-2xl text-[#8C7654] hover:bg-[#C5A880]/15 hover:text-[#2C241B] font-bold text-xs uppercase tracking-wider transition-all"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Go to Home
+          </Button>
+        </Link>
+      </div>
+    </div>
+  </div>;
 
   const getUserRole = (user: UserProfile): string => {
     return user.user_roles?.[0]?.role || 'member';
