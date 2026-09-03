@@ -13,6 +13,7 @@ import {
   startOfDay,
   startOfMonth,
   subDays,
+  subMonths,
 } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { useQuery } from "@tanstack/react-query";
@@ -190,9 +191,13 @@ const renderRoundedBar = (props: any) => {
 
 const getPresetRange = (mode: Exclude<RangeMode, "custom">) => {
   const today = startOfDay(new Date());
-  return mode === "week"
-    ? { start: subDays(today, 6), end: today }
-    : { start: startOfMonth(today), end: endOfMonth(today) };
+  if (mode === "week") {
+    return { start: subDays(today, 6), end: today };
+  }
+  // "month" => last calendar month
+  const lastMonthStart = startOfMonth(subMonths(today, 1));
+  const lastMonthEnd = endOfMonth(subMonths(today, 1));
+  return { start: lastMonthStart, end: lastMonthEnd };
 };
 
 const normalizeDate = (date: Date) => format(date, "yyyy-MM-dd");
@@ -963,6 +968,7 @@ const AdvancedAnalytics = () => {
                     numberOfMonths={2}
                     showOutsideDays={false}
                     defaultMonth={dateRange.from}
+                    disabled={{ after: new Date() }}
                     initialFocus
                   />
                 </PopoverContent>
@@ -994,7 +1000,7 @@ const AdvancedAnalytics = () => {
                         : { color: "#BFA378" }
                     }
                   >
-                    {mode === "week" ? "Last 7 days" : "This month"}
+                    {mode === "week" ? "Last 7 days" : "Last month"}
                   </Button>
                 ))}
               </div>

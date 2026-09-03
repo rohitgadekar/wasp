@@ -35,28 +35,33 @@ function Calendar({
         row: "flex w-full mt-2",
         cell: cn(
           "h-9 w-9 text-center text-sm p-0 relative",
-          "[&:has([aria-selected].day-range-end)]:rounded-r-full",
-          "[&:has([aria-selected].day-outside)]:bg-[#C5A880]/10",
-          "[&:has([aria-selected])]:bg-[#C5A880]/10",
-          "first:[&:has([aria-selected])]:rounded-l-full last:[&:has([aria-selected])]:rounded-r-full"
+          // mid-range cells: flat band background
+          "[&:has([aria-selected]:not(.day-range-start):not(.day-range-end))]:bg-[#C5A880]/15",
+          // start cell: only left half rounded → pill left cap
+          "[&:has(.day-range-start)]:rounded-l-full [&:has(.day-range-start)]:bg-[#C5A880]/15",
+          // end cell: only right half rounded → pill right cap
+          "[&:has(.day-range-end)]:rounded-r-full [&:has(.day-range-end)]:bg-[#C5A880]/15",
+          // edge of row: cap the band
+          "first:[&:has([aria-selected])]:rounded-l-full last:[&:has([aria-selected])]:rounded-r-full",
+          "[&:has([aria-selected].day-outside)]:bg-[#C5A880]/8"
         ),
         day: cn(
-          "inline-flex items-center justify-center h-9 w-9 p-0 text-sm font-medium rounded-full transition-colors",
-          "text-[#2C241B] hover:bg-[#C5A880]/20 hover:text-[#2C241B]",
+          "inline-flex items-center justify-center h-9 w-9 p-0 text-sm font-medium rounded-full transition-colors relative z-10",
+          "text-[#2C241B] hover:bg-[#C5A880]/25 hover:text-[#2C241B]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A880]/40",
           "aria-selected:opacity-100"
         ),
-        day_range_start: "day-range-start rounded-l-full",
-        day_range_end: "day-range-end rounded-r-full",
+        day_range_start: "day-range-start",
+        day_range_end: "day-range-end",
         day_selected:
-          "bg-[#2C241B] text-[#FDFDFB] hover:bg-[#2C241B] hover:text-[#FDFDFB] focus:bg-[#2C241B] focus:text-[#FDFDFB] font-semibold shadow-md",
+          "bg-[#2C241B] text-[#FDFDFB] hover:bg-[#2C241B] hover:text-[#FDFDFB] focus:bg-[#2C241B] focus:text-[#FDFDFB] font-semibold rounded-full",
         day_today:
           "bg-[#C5A880]/15 text-[#2C241B] font-bold ring-2 ring-[#C5A880]/35 aria-selected:bg-[#2C241B] aria-selected:text-[#FDFDFB] aria-selected:ring-[#2C241B]",
         day_outside:
-          "day-outside text-[#A59582]/45 aria-selected:bg-[#C5A880]/10 aria-selected:text-[#8C7654] aria-selected:opacity-100",
+          "day-outside text-[#A59582]/40 aria-selected:bg-transparent aria-selected:text-[#8C7654]/60 aria-selected:opacity-100",
         day_disabled: "text-[#A59582]/30 hover:bg-transparent cursor-not-allowed",
         day_range_middle:
-          "aria-selected:bg-[#C5A880]/15 aria-selected:text-[#2C241B] rounded-none",
+          "aria-selected:bg-transparent aria-selected:text-[#2C241B] aria-selected:hover:bg-[#C5A880]/25 rounded-full",
         day_hidden: "invisible",
         ...classNames,
       }}
