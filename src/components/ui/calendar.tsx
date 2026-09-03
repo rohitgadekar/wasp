@@ -35,8 +35,8 @@ function Calendar({
         row: "flex w-full mt-2",
         cell: cn(
           "h-9 w-9 text-center text-sm p-0 relative",
-          // mid-range cells: flat band background
-          "[&:has([aria-selected]:not(.day-range-start):not(.day-range-end))]:bg-[#C5A880]/15",
+          // mid-range cells: flat band — only when .day-range-middle is explicitly set
+          "[&:has(.day-range-middle)]:bg-[#C5A880]/15",
           // start cell: only left half rounded → pill left cap
           "[&:has(.day-range-start)]:rounded-l-full [&:has(.day-range-start)]:bg-[#C5A880]/15",
           // end cell: only right half rounded → pill right cap
@@ -61,7 +61,7 @@ function Calendar({
           "day-outside text-[#A59582]/40 aria-selected:bg-transparent aria-selected:text-[#8C7654]/60 aria-selected:opacity-100",
         day_disabled: "text-[#A59582]/30 hover:bg-transparent cursor-not-allowed",
         day_range_middle:
-          "aria-selected:bg-transparent aria-selected:text-[#2C241B] aria-selected:hover:bg-[#C5A880]/25 rounded-full",
+          "day-range-middle aria-selected:bg-transparent aria-selected:text-[#2C241B] aria-selected:hover:bg-[#C5A880]/25 rounded-full",
         day_hidden: "invisible",
         ...classNames,
       }}

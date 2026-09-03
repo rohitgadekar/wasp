@@ -828,7 +828,7 @@ const StatusViewer = () => {
                             <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden group">
                                 <CardHeader className="p-8 pb-4">
                                     <CardTitle className="text-2xl font-bold text-[#2C241B]">Team Velocity</CardTitle>
-                                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-3 border-t border-[#E5DCCB]/60">
+                                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-3 border-[#E5DCCB]/60">
                                         <span className="flex items-center gap-2 text-xs font-sans font-bold text-[#C5A880] uppercase tracking-wider">
                                             <div className="w-2.5 h-2.5 rounded-full bg-[#C5A880]" />
                                             {dayStats.new_dev} New Dev
@@ -1035,7 +1035,7 @@ const StatusViewer = () => {
                                         <CardHeader className="p-8 pb-4">
                                             <CardTitle className="text-2xl font-bold text-[#2C241B]">Individual Performance</CardTitle>
                                             <p className="text-sm font-sans text-[#8C7654] mt-1 mb-4">Cases delivered by team members as of {format(selectedDate, 'EEEE, MMMM do, yyyy')}</p>
-                                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2 border-t border-[#E5DCCB]/60">
+                                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2 border-[#E5DCCB]/60">
                                                 <span className="flex items-center gap-2 text-xs font-sans font-bold text-[#8C7654] uppercase tracking-wider">
                                                     <div className="w-2.5 h-2.5 rounded-full bg-[#8C7654]" />
                                                     {individualData.reduce((acc, curr) => acc + curr.updates, 0)} Updates

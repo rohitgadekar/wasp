@@ -77,7 +77,7 @@ export function CalendarWithDots({
     return (
         <div className={cn("w-full  mx-auto  rounded-lg  ", className)}>
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center justify-between p-0 ">
                 <button
                     onClick={prevMonth}
                     className="p-2 rounded-full hover:bg-[#E3DAC9] transition-colors hover:text-white border border-[#E3DAC9]"
@@ -133,7 +133,7 @@ export function CalendarWithDots({
                             disabled={isFutureDate}
                             onClick={() => onSelect?.(day)}
                             className={cn(
-                                "relative flex items-center justify-center w-10 h-10 rounded-full text-sm transition-all",
+                                "relative flex items-center justify-center w-full aspect-square max-w-10 mx-auto rounded-full text-sm transition-all",
                                 !isFutureDate && "hover:bg-[#997C53] hover:text-accent-foreground",
                                 isFutureDate && "opacity-30 cursor-not-allowed",
                                 isSelected && "bg-[#2C241B] text-primary-foreground font-bold shadow-md",
@@ -161,7 +161,6 @@ export function CalendarWithDots({
                                 />
                             )}
 
-                            {/* Dot indicator for holiday */}
                             {/* Dot indicator for holiday */}
                             {holidayName && !dataExists && (
                                 <span
