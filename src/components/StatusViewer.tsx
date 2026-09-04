@@ -166,7 +166,8 @@ const StatusViewer = () => {
         'tschellenberg@spscommerce.com',
         'amit.gilda@bristlecone.com',
         'pankaj.patil@bristlecone.com',
-        'aditya.sanjay.dahe@bristlecone.com'
+        'aditya.sanjay.dahe@bristlecone.com',
+        'anil.panigrahi@bristlecone.com'
     ].map(e => e.toLowerCase()), []);
 
     // Fetch daily task statuses

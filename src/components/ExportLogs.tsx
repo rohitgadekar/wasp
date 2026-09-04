@@ -173,7 +173,8 @@ const ExportLogs = () => {
         'tschellenberg@spscommerce.com',
         'amit.gilda@bristlecone.com',
         'pankaj.patil@bristlecone.com',
-        'aditya.sanjay.dahe@bristlecone.com'
+        'aditya.sanjay.dahe@bristlecone.com',
+        'anil.panigrahi@bristlecone.com'
     ].map(e => e.toLowerCase()), []);
 
     // Fetch task statuses with TanStack Query
@@ -778,6 +779,28 @@ const ExportLogs = () => {
                                 SE MAPPERS • {format(selectedDate, 'yyyy')}
                             </p>
                         </div>
+
+                        {/* ANILS FAREWELL */}
+                        <div className="relative mb-6 w-full overflow-hidden rounded-[2rem] border border-[#e7e1d8] bg-gradient-to-br from-[#faf9f6] to-[#f4f0e9] px-8 py-7 text-center">
+
+                            {/* Eyebrow */}
+                            <div className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9a9287]">
+                                With Gratitude
+                            </div>
+
+                            {/* Heading */}
+                            <div className="mb-2.5 text-[24px] font-semibold leading-tight tracking-[-0.02em] text-[#25221e]">
+                                Thank You, Anil Panigrahi
+                            </div>
+
+                            {/* Message */}
+                            <div className="mx-auto max-w-[560px] text-[13px] leading-[1.7] text-[#716b63]">
+                                As you begin your next journey, we're grateful for everything
+                                you've contributed to the team. Wishing you continued success,
+                                happiness, and all the best for what lies ahead.
+                            </div>
+                        </div>
+                        {/* ANILS FAREWELL */}
 
                         {/* Attendance / Presence Metrics */}
                         {!isHoliday && (
