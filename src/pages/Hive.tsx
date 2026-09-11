@@ -46,7 +46,7 @@ const Hive = () => {
 
   // Extension download URL
   const downloadUrl =
-    "https://nslyikktilelnqigidvk.supabase.co/storage/v1/object/public/extension/hive%20v1.zip";
+    "https://nslyikktilelnqigidvk.supabase.co/storage/v1/object/public/extension/Hive%20v1.2.0.zip";
 
   const steps = [
     {
@@ -300,15 +300,14 @@ const Hive = () => {
         {/* Hero Section */}
         <section className="relative pt-16 pb-20 md:pt-24 md:pb-28 px-6">
           <div className="max-w-6xl mx-auto">
-            
+
 
             {/* Hero Content */}
             <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
               {/* Icon */}
               <div
-                className={`mb-8 transition-all duration-1000 delay-100 ${
-                  isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90"
-                }`}
+                className={`mb-8 transition-all duration-1000 delay-100 ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90"
+                  }`}
               >
                 <div className="relative">
                   <div className="absolute inset-0 bg-[#C5A880]/20 rounded-3xl blur-2xl scale-150" />
@@ -328,9 +327,8 @@ const Hive = () => {
 
               {/* Headline */}
               <h1
-                className={`text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.1] transition-all duration-1000 delay-200 ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
+                className={`text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.1] transition-all duration-1000 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                  }`}
                 style={{ color: "#2C241B" }}
               >
                 Browser Extension
@@ -347,9 +345,8 @@ const Hive = () => {
 
               {/* Subheadline */}
               <p
-                className={`text-lg md:text-xl font-medium leading-relaxed mb-10 max-w-2xl transition-all duration-1000 delay-300 ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
+                className={`text-lg md:text-xl font-medium leading-relaxed mb-10 max-w-2xl transition-all duration-1000 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                  }`}
                 style={{ color: "#8C7654" }}
               >
                 Quick Transaction Tracker access, Jira task logging, and map tooling
@@ -358,9 +355,8 @@ const Hive = () => {
 
               {/* CTA Buttons */}
               <div
-                className={`flex flex-col sm:flex-row gap-4 transition-all duration-1000 delay-400 ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
+                className={`flex flex-col sm:flex-row gap-4 transition-all duration-1000 delay-400 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                  }`}
               >
                 <Button
                   size="lg"
@@ -399,9 +395,8 @@ const Hive = () => {
 
               {/* Trust indicators */}
               <div
-                className={`mt-12 flex flex-wrap justify-center gap-8 transition-all duration-1000 delay-500 ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
+                className={`mt-12 flex flex-wrap justify-center gap-8 transition-all duration-1000 delay-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <Shield className="w-5 h-5 text-[#C5A880]" />
