@@ -109,6 +109,23 @@ const isValidCase = (link: string) => {
     );
 };
 
+const isMemberActiveOnDate = (
+    member: { id: string; created_at?: string | null },
+    targetDateStr: string,
+    reportedUserIds?: Set<string>
+): boolean => {
+    if (reportedUserIds && reportedUserIds.has(member.id)) return true;
+    if (!member.created_at) return true;
+    try {
+        const parsed = parseISO(member.created_at);
+        if (!isValid(parsed)) return true;
+        const memberJoinDateStr = format(parsed, 'yyyy-MM-dd');
+        return memberJoinDateStr <= targetDateStr;
+    } catch {
+        return true;
+    }
+};
+
 const StatusViewer = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { toast } = useToast();
@@ -218,7 +235,7 @@ const StatusViewer = () => {
     const { data: allProfiles = [], isLoading: loadingProfiles } = useQuery({
         queryKey: ['profiles_viewer'],
         queryFn: async () => {
-            const { data } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
+            const { data } = await supabase.from('profiles').select('id, full_name, email, created_at').order('full_name');
             return data || [];
         },
     });
@@ -442,7 +459,10 @@ const StatusViewer = () => {
     }, [filteredTaskStatuses]);
 
     const presenceStats = useMemo(() => {
-        const filteredTeam = allProfiles.filter(p => !EXCLUDED_EMAILS.includes((p as any).email?.toLowerCase() || ''));
+        const reportedUserIds = new Set(filteredTaskStatuses.map(s => s.user_id));
+        const filteredTeam = allProfiles
+            .filter(p => !EXCLUDED_EMAILS.includes((p as any).email?.toLowerCase() || ''))
+            .filter(p => isMemberActiveOnDate(p, dateStr, reportedUserIds));
 
         const onLeave = filteredTaskStatuses.filter(status =>
             [...(status.new_dev || []), ...(status.updates || [])]
@@ -458,7 +478,7 @@ const StatusViewer = () => {
             working,
             onLeave
         };
-    }, [filteredTaskStatuses, allProfiles, EXCLUDED_EMAILS]);
+    }, [filteredTaskStatuses, allProfiles, EXCLUDED_EMAILS, dateStr]);
 
     const CHART_COLORS = [
         '#C5A059', // Primary Gold
@@ -692,14 +712,17 @@ const StatusViewer = () => {
         });
     };
 
+    const isWeekend = selectedDate.getDay() === 0 || selectedDate.getDay() === 6;
     const isHoliday = !!holidays[dateStr];
+    const isOffDay = isHoliday || isWeekend;
     const unreportedUsers = useMemo(() => {
         const reportedUserIds = new Set(filteredTaskStatuses.map(s => s.user_id));
         return allProfiles
             .filter(p => !EXCLUDED_EMAILS.includes(p.email?.toLowerCase() || ''))
             .filter(p => !reportedUserIds.has(p.id))
+            .filter(p => isMemberActiveOnDate(p, dateStr))
             .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
-    }, [allProfiles, filteredTaskStatuses, EXCLUDED_EMAILS]);
+    }, [allProfiles, filteredTaskStatuses, EXCLUDED_EMAILS, dateStr]);
 
     return (
         <div className="relative min-h-screen bg-gradient-to-tr from-[#FAF9F5] via-[#FDFDFB] to-[#F3EEE3] select-none">
@@ -746,7 +769,7 @@ const StatusViewer = () => {
                     </div>
 
                     {/* Attendance / Presence Metrics */}
-                    {!isHoliday && (
+                    {!isOffDay && (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                             {['Total Team', unreportedUsers.length > 0 ? 'Reported / Unreported' : 'Reported', 'Working', 'On Leave'].map((label, index) => {
                                 const isLoad = index === 0 ? loadingProfiles : (loadingTable || loadingProfiles);
@@ -795,14 +818,16 @@ const StatusViewer = () => {
                             </CardContent>
                         </Card>
 
-                        {isHoliday ? (
-                            /* Company Holiday Dummy Card matching Team Velocity size */
+                        {isOffDay ? (
+                            /* Company Holiday / Weekend Card matching Team Velocity size */
                             <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden group flex flex-col justify-between">
                                 <CardHeader className="p-8 pb-4">
                                     <div className="flex items-center justify-between">
-                                        <CardTitle className="text-2xl font-bold text-[#2C241B]">Declared Holiday</CardTitle>
+                                        <CardTitle className="text-2xl font-bold text-[#2C241B]">
+                                            {isHoliday ? 'Declared Holiday' : 'Weekend Break'}
+                                        </CardTitle>
                                         <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest">
-                                            Company Holiday
+                                            {isHoliday ? 'Company Holiday' : 'Weekend Break'}
                                         </Badge>
                                     </div>
                                     <p className="text-sm font-sans text-[#8C7654] mt-1">{format(selectedDate, 'EEEE, MMMM do, yyyy')}</p>
@@ -812,10 +837,12 @@ const StatusViewer = () => {
                                         <TentTree className="w-9 h-9 text-[#C5A880]" />
                                     </div>
                                     <h3 className="text-2xl font-semibold text-[#2C241B] tracking-wide">
-                                        {holidays[dateStr] || 'Company Holiday'}
+                                        {holidays[dateStr] || (isWeekend ? `${format(selectedDate, 'EEEE')} Break` : 'Company Holiday')}
                                     </h3>
                                     <p className="text-sm font-serif italic text-[#8C7654] mt-2 max-w-sm">
-                                        Engineering operations are paused for today. Enjoy the celebration!
+                                        {isHoliday
+                                            ? 'Engineering operations are paused for today. Enjoy the celebration!'
+                                            : 'Engineering operations are paused for the weekend. Enjoy the break!'}
                                     </p>
                                     <div className="mt-6 flex items-center gap-2">
                                         <div className="h-1.5 w-1.5 rounded-full bg-[#C5A880] animate-pulse" />
@@ -910,7 +937,7 @@ const StatusViewer = () => {
                             </Card>
                         )}
 
-                        {!isHoliday && (
+                        {!isOffDay && (
                             /* Trend Analysis Chart */
                             <Card className="lg:col-span-2 bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden group">
                                 <CardHeader className="p-8 pb-4">
@@ -1027,7 +1054,7 @@ const StatusViewer = () => {
                         )}
                     </div>
 
-                    {!isHoliday && (
+                    {!isOffDay && (
                         <>
                             {/* New Individual Charts Section */}
                             {dayStats.total > 0 && (

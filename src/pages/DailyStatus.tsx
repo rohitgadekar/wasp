@@ -121,6 +121,23 @@ const isValidCase = (link: string) => {
     );
 };
 
+const isMemberActiveOnDate = (
+    member: { id: string; created_at?: string | null },
+    targetDateStr: string,
+    reportedUserIds?: Set<string>
+): boolean => {
+    if (reportedUserIds && reportedUserIds.has(member.id)) return true;
+    if (!member.created_at) return true;
+    try {
+        const parsed = parseISO(member.created_at);
+        if (!isValid(parsed)) return true;
+        const memberJoinDateStr = format(parsed, 'yyyy-MM-dd');
+        return memberJoinDateStr <= targetDateStr;
+    } catch {
+        return true;
+    }
+};
+
 const DailyStatus = () => {
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
@@ -224,7 +241,7 @@ const DailyStatus = () => {
     const { data: allProfiles = [], isLoading: loadingProfiles } = useQuery({
         queryKey: ['profiles'],
         queryFn: async () => {
-            const { data } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
+            const { data } = await supabase.from('profiles').select('id, full_name, email, created_at').order('full_name');
             return data || [];
         }
     });
@@ -366,7 +383,9 @@ const DailyStatus = () => {
         }
     });
 
+    const isWeekend = selectedDate.getDay() === 0 || selectedDate.getDay() === 6;
     const isHoliday = !!holidays[dateStr];
+    const isOffDay = isHoliday || isWeekend;
 
     const toggleHoliday = async () => {
         const dStr = format(selectedDate, 'yyyy-MM-dd');
@@ -480,7 +499,10 @@ const DailyStatus = () => {
     }, [monthStats, selectedDate, trendRange]);
 
     const presenceStats = useMemo(() => {
-        const filteredTeam = allProfiles.filter(p => !EXCLUDED_EMAILS.includes(p.email?.toLowerCase() || ''));
+        const reportedUserIds = new Set(filteredTaskStatuses.map(s => s.user_id));
+        const filteredTeam = allProfiles
+            .filter(p => !EXCLUDED_EMAILS.includes(p.email?.toLowerCase() || ''))
+            .filter(p => isMemberActiveOnDate(p, dateStr, reportedUserIds));
 
         const onLeave = filteredTaskStatuses.filter(status =>
             [...(status.new_dev || []), ...(status.updates || [])]
@@ -496,7 +518,7 @@ const DailyStatus = () => {
             working,
             onLeave
         };
-    }, [filteredTaskStatuses, allProfiles, EXCLUDED_EMAILS]);
+    }, [filteredTaskStatuses, allProfiles, EXCLUDED_EMAILS, dateStr]);
 
     const userEntry = taskStatuses.find(s => s.user_id === (selectedUserId || user?.id));
 
@@ -519,8 +541,9 @@ const DailyStatus = () => {
         return allProfiles
             .filter(p => !EXCLUDED_EMAILS.includes(p.email?.toLowerCase() || ''))
             .filter(p => !reportedUserIds.has(p.id))
+            .filter(p => isMemberActiveOnDate(p, dateStr))
             .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
-    }, [allProfiles, filteredTaskStatuses, EXCLUDED_EMAILS]);
+    }, [allProfiles, filteredTaskStatuses, EXCLUDED_EMAILS, dateStr]);
 
 
     // Sync form with user's current entry
@@ -828,7 +851,7 @@ const DailyStatus = () => {
         <div className="relative min-h-screen">
 
             {/* Floating Actions Hub */}
-            {isOwner && !isHoliday && (
+            {isOwner && !isOffDay && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-2 backdrop-blur-2xl px-2 py-2 rounded-full shadow-[0_20px_50px_rgba(197,168,128,0.15)] animate-in slide-in-from-top-8 duration-700">
                     <Button variant="ghost" className="rounded-full px-4 h-10 font-sans font-bold text-[9px] uppercase tracking-wider text-[#8C7654] hover:bg-[#C5A880]/10 hover:text-[#2C241B] transition-all" onClick={exportToPDF}>
                         <FileDown className="w-2 h-2 mr-2 text-[#C5A880]" /> PDF
@@ -912,7 +935,7 @@ const DailyStatus = () => {
                     </div>
 
                     {/* Attendance / Presence Metrics */}
-                    {!isHoliday && (
+                    {!isOffDay && (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                             {['Total Team', unreportedUsers.length > 0 ? 'Reported / Unreported' : 'Reported', 'Working', 'On Leave'].map((label, index) => {
                                 const isLoad = index === 0 ? loadingProfiles : (loadingTable || loadingProfiles);
@@ -982,14 +1005,16 @@ const DailyStatus = () => {
                             </CardContent>
                         </Card>
 
-                        {isHoliday ? (
-                            /* Company Holiday Dummy Card matching Team Velocity size */
+                        {isOffDay ? (
+                            /* Company Holiday / Weekend Card matching Team Velocity size */
                             <Card className="bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden group flex flex-col justify-between">
                                 <CardHeader className="p-8 pb-4">
                                     <div className="flex items-center justify-between">
-                                        <CardTitle className="text-2xl font-bold text-[#2C241B]">Declared Holiday</CardTitle>
+                                        <CardTitle className="text-2xl font-bold text-[#2C241B]">
+                                            {isHoliday ? 'Declared Holiday' : 'Weekend Break'}
+                                        </CardTitle>
                                         <Badge className="bg-[#C5A880]/15 text-[#8C7654] border-none rounded-full px-4 py-1.5 text-[9px] font-sans font-bold uppercase tracking-widest">
-                                            Company Holiday
+                                            {isHoliday ? 'Company Holiday' : 'Weekend Break'}
                                         </Badge>
                                     </div>
                                     <p className="text-sm font-sans text-[#8C7654] mt-1">{format(selectedDate, 'EEEE, MMMM do, yyyy')}</p>
@@ -999,10 +1024,12 @@ const DailyStatus = () => {
                                         <TentTree className="w-9 h-9 text-[#C5A880]" />
                                     </div>
                                     <h3 className="text-2xl font-semibold text-[#2C241B] tracking-wide">
-                                        {holidays[dateStr] || 'Company Holiday'}
+                                        {holidays[dateStr] || (isWeekend ? `${format(selectedDate, 'EEEE')} Break` : 'Company Holiday')}
                                     </h3>
                                     <p className="text-sm font-serif italic text-[#8C7654] mt-2 max-w-sm">
-                                        Engineering operations are paused for today. Enjoy the celebration!
+                                        {isHoliday
+                                            ? 'Engineering operations are paused for today. Enjoy the celebration!'
+                                            : 'Engineering operations are paused for the weekend. Enjoy the break!'}
                                     </p>
                                     <div className="mt-6 flex items-center gap-2">
                                         <div className="h-1.5 w-1.5 rounded-full bg-[#C5A880] animate-pulse" />
@@ -1097,7 +1124,7 @@ const DailyStatus = () => {
                             </Card>
                         )}
 
-                        {!isHoliday && (
+                        {!isOffDay && (
                             /* Trend Analysis Chart */
                             <Card className="lg:col-span-2 bg-[#FDFDFB] rounded-[2.5rem] border border-[#E5DCCB] hover:border-[#C5A880]/50 hover:shadow-xl transition-all duration-500 overflow-hidden group">
                                 <CardHeader className="p-8 pb-4">
@@ -1215,7 +1242,7 @@ const DailyStatus = () => {
                     </div>
 
 
-                    {!isHoliday && (
+                    {!isOffDay && (
                         <>
                             {/* New Individual Charts Section */}
                             {dayStats.total > 0 && (
