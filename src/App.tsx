@@ -28,6 +28,7 @@ import MapGenerator from "./pages/MapGenerator";
 import Leaves from "./pages/Leaves";
 import DocumentFinder from "./pages/DocumentFinder";
 import AiAgent from "./pages/AiAgent";
+import SharedAiChat from "./pages/SharedAiChat";
 import Hive from "./pages/Hive";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import ExportLogs from "./components/ExportLogs";
@@ -154,6 +155,7 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
+            <Route path="/ai-agent/share/:shareId" element={<SharedAiChat />} />
             <Route path="/hive" element={
               <ProtectedRoute>
                 <Layout>

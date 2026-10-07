@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTitle } from '@/hooks/use-title';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageSquarePlus, Menu, X, Clock, Trash2, ArrowLeft, ShieldAlert } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Loader2, MessageSquarePlus, Menu, X, Clock, Trash2, ArrowLeft, ShieldAlert, Share2 } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import ChatMessage, { Message } from '@/components/ai-agent/ChatMessage';
 import ChatInput from '@/components/ai-agent/ChatInput';
+import { ShareChatDialog } from '@/components/ai-agent/ShareChatDialog';
 import { cn } from '@/lib/utils';
 import { RiChatAiFill } from 'react-icons/ri';
 import { TbFileShredder } from 'react-icons/tb';
@@ -35,12 +36,16 @@ const AiAgent = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareChatTitle, setShareChatTitle] = useState('');
+  const [shareChatMessages, setShareChatMessages] = useState<Message[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isAuthorized = !roleLoading && (role === 'owner' || role === 'manager' || role === 'moderator');
 
@@ -102,8 +107,8 @@ const AiAgent = () => {
 
         setChatSessions(sessions);
 
-        // Load the most recent session
-        if (!currentSessionId && sessions.length > 0) {
+        // Load the most recent session only if not loading an imported conversation
+        if (!currentSessionId && !location.state?.importedMessages && sessions.length > 0) {
           loadSession(sessions[0].id);
         }
       }
@@ -111,6 +116,35 @@ const AiAgent = () => {
 
     loadChatSessions();
   }, [user?.id]);
+
+  // Handle conversation imported from shared link
+  useEffect(() => {
+    if (location.state?.importedMessages && Array.isArray(location.state.importedMessages)) {
+      const formatted: Message[] = location.state.importedMessages.map((m: { id?: string; role: 'user' | 'assistant'; content: string; timestamp: string | Date }) => ({
+        id: m.id || `${Date.now()}-${Math.random()}`,
+        role: m.role,
+        content: m.content,
+        timestamp: new Date(m.timestamp),
+      }));
+
+      setMessages([
+        {
+          id: 'init',
+          role: 'assistant',
+          content: `What are we building, fixing, or optimizing today?`,
+          timestamp: new Date(formatted[0]?.timestamp ? new Date(formatted[0].timestamp).getTime() - 1000 : Date.now()),
+        },
+        ...formatted,
+      ]);
+
+      if (location.state.importedDate) {
+        setCurrentSessionId(location.state.importedDate);
+      }
+
+      // Clear navigation state to prevent duplicate-applying on reload
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const loadSession = async (sessionId: string) => {
     if (!user) return;
@@ -235,12 +269,12 @@ const AiAgent = () => {
 
     const { data: sessionMessages } = await supabase
       .from('ai_chat_messages')
-      .select('id')
+      .select('id, created_at')
       .eq('user_id', user.id);
 
     if (sessionMessages) {
       const idsToDelete = sessionMessages
-        .filter(msg => new Date(msg.id).toDateString() === sessionDate)
+        .filter(msg => new Date(msg.created_at).toDateString() === sessionDate)
         .map(msg => msg.id);
 
       const { error } = await supabase
@@ -268,6 +302,78 @@ const AiAgent = () => {
         description: 'The conversation has been removed.'
       });
     }
+  };
+
+  const handleOpenShareCurrent = () => {
+    const activeMessages = messages.filter(m => m.id !== 'init');
+    if (activeMessages.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Empty conversation',
+        description: 'Start chatting before sharing the conversation.'
+      });
+      return;
+    }
+
+    const firstUserMsg = activeMessages.find(m => m.role === 'user');
+    const defaultTitle = firstUserMsg
+      ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '')
+      : 'Nyra AI Conversation';
+
+    setShareChatTitle(defaultTitle);
+    setShareChatMessages(messages);
+    setShareDialogOpen(true);
+  };
+
+  const handleOpenShareSession = async (session: ChatSession, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    if (currentSessionId === session.id) {
+      handleOpenShareCurrent();
+      return;
+    }
+
+    // Load messages specifically for this session
+    const { data, error } = await supabase
+      .from('ai_chat_messages')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    if (error || !data) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to prepare share',
+        description: 'Could not load messages for this conversation.'
+      });
+      return;
+    }
+
+    const sessionDate = new Date(session.id).toDateString();
+    const sessionMessages = data.filter(msg =>
+      new Date(msg.created_at).toDateString() === sessionDate
+    );
+
+    const history: Message[] = sessionMessages.map(m => ({
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      timestamp: new Date(m.created_at)
+    }));
+
+    if (history.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Empty chat',
+        description: 'No messages found to share.'
+      });
+      return;
+    }
+
+    setShareChatTitle(session.title);
+    setShareChatMessages(history);
+    setShareDialogOpen(true);
   };
 
   const handleSendMessage = async (input: string) => {
@@ -483,14 +589,26 @@ const AiAgent = () => {
                         <span className="ml-auto shrink-0">{session.messageCount} msgs</span>
                       </div> */}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:bg-transparent group-hover:text-black group-hover:opacity-100 transition-opacity h-7 w-7 rounded-full shrink-0 mt-0.5"
-                      onClick={(e) => handleDeleteSession(session.id, e)}
-                    >
-                      <TbFileShredder className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground h-7 w-7 rounded-full shrink-0"
+                        onClick={(e) => handleOpenShareSession(session, e)}
+                        title="Share Chat"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-[#8C7654]" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-rose-600 h-7 w-7 rounded-full shrink-0"
+                        onClick={(e) => handleDeleteSession(session.id, e)}
+                        title="Delete Chat"
+                      >
+                        <TbFileShredder className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -516,6 +634,21 @@ const AiAgent = () => {
         >
           {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </Button>
+
+        {/* Top Right Action Bar (Share Chat like ChatGPT & Grok) */}
+        {messages.filter(m => m.id !== 'init').length > 0 && (
+          <div className="absolute top-3 right-4 z-50 flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenShareCurrent}
+              className="rounded-full h-9 px-4 bg-white/80 dark:bg-[#1E1C18]/80 backdrop-blur-md border border-[#E5DCCB] dark:border-[#38322D] shadow-sm hover:bg-[#FAF8F5] dark:hover:bg-[#2A2621] text-xs font-semibold text-[#2C241B] dark:text-[#EFEAE2] flex items-center gap-1.5 transition-all hover:scale-105"
+            >
+              <Share2 className="w-3.5 h-3.5 text-[#8C7654]" />
+              <span>Share</span>
+            </Button>
+          </div>
+        )}
 
         <div className="relative z-10 flex-1 flex flex-col min-h-0">
           {/* Top fade — mirrors the bottom fade on ChatInput */}
@@ -565,6 +698,14 @@ const AiAgent = () => {
           <ChatInput onSubmit={handleSendMessage} isLoading={isLoading} />
         </div>
       </div>
+
+      <ShareChatDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        title={shareChatTitle}
+        messages={shareChatMessages}
+        user={user}
+      />
     </div>
   );
 };
