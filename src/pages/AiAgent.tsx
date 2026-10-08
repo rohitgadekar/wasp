@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTitle } from '@/hooks/use-title';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageSquarePlus, Menu, X, Clock, Trash2, ArrowLeft, ShieldAlert, Share2 } from 'lucide-react';
+import { Loader2, MessageSquarePlus, Menu, X, Clock, Trash2, ArrowLeft, ShieldAlert, Share2, ArrowDown, MoreVertical } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import ChatMessage, { Message } from '@/components/ai-agent/ChatMessage';
@@ -13,7 +13,30 @@ import ChatInput from '@/components/ai-agent/ChatInput';
 import { ShareChatDialog } from '@/components/ai-agent/ShareChatDialog';
 import { cn } from '@/lib/utils';
 import { RiChatAiFill } from 'react-icons/ri';
-import { TbFileShredder } from 'react-icons/tb';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  AVAILABLE_MODELS,
+  DEFAULT_MODEL_ID,
+  DEFAULT_MODEL,
+  routeQuery,
+  AIModelConfig,
+  parseSkillCommand
+} from '@/lib/ai-models';
 
 interface ChatSession {
   id: string;
@@ -39,7 +62,24 @@ const AiAgent = () => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareChatTitle, setShareChatTitle] = useState('');
   const [shareChatMessages, setShareChatMessages] = useState<Message[]>([]);
+  const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
+  // Multi-model selection & smart token routing state
+  const [selectedModelId, setSelectedModelId] = useState<string>(() => {
+    const saved = localStorage.getItem('nyra_selected_model');
+    if (saved && AVAILABLE_MODELS.some(m => m.id === saved)) {
+      return saved;
+    }
+    return DEFAULT_MODEL_ID;
+  });
+  const [activeRoutedModel, setActiveRoutedModel] = useState<AIModelConfig | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>('Analyzing...');
+
+  // Scroll & Smart Auto-Scroll Detection (Grok / ChatGPT style)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef<boolean>(true);
+  const [showScrollButton, setShowScrollButton] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
@@ -47,7 +87,7 @@ const AiAgent = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isAuthorized = !roleLoading && (role === 'owner' || role === 'manager' || role === 'moderator');
+  const isAuthorized = !roleLoading && (role === 'owner' || role === 'manager' || role === 'moderator' || role === 'member');
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -106,11 +146,6 @@ const AiAgent = () => {
         });
 
         setChatSessions(sessions);
-
-        // Load the most recent session only if not loading an imported conversation
-        if (!currentSessionId && !location.state?.importedMessages && sessions.length > 0) {
-          loadSession(sessions[0].id);
-        }
       }
     };
 
@@ -184,16 +219,39 @@ const AiAgent = () => {
         },
         ...history
       ]);
+
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+          isAtBottomRef.current = true;
+          setShowScrollButton(false);
+        }
+      }, 60);
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+    const atBottom = distanceToBottom < 80;
+    isAtBottomRef.current = atBottom;
+    setShowScrollButton(!atBottom);
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const scrollToBottom = (smooth = false) => {
+    if (!scrollContainerRef.current) return;
+    if (smooth) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    } else {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+    isAtBottomRef.current = true;
+    setShowScrollButton(false);
+  };
 
   useTitle('Nyra AI', 'Codebase Intelligence Assistant');
 
@@ -252,6 +310,7 @@ const AiAgent = () => {
 
   const handleNewChat = () => {
     setCurrentSessionId(null);
+    setActiveRoutedModel(null);
     setMessages([{
       id: 'init',
       role: 'assistant',
@@ -260,8 +319,19 @@ const AiAgent = () => {
     }]);
   };
 
-  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleSelectModel = (modelId: string) => {
+    setSelectedModelId(modelId);
+    localStorage.setItem('nyra_selected_model', modelId);
+    const found = AVAILABLE_MODELS.find(m => m.id === modelId);
+    if (found && modelId !== 'auto') {
+      setActiveRoutedModel(found);
+    } else {
+      setActiveRoutedModel(null);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
 
     if (!user) return;
 
@@ -304,6 +374,20 @@ const AiAgent = () => {
     }
   };
 
+  const promptDeleteSession = (session: ChatSession, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSessionToDelete(session);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteSession = async () => {
+    if (!sessionToDelete) return;
+    const sessionId = sessionToDelete.id;
+    setDeleteConfirmOpen(false);
+    setSessionToDelete(null);
+    await handleDeleteSession(sessionId);
+  };
+
   const handleOpenShareCurrent = () => {
     const activeMessages = messages.filter(m => m.id !== 'init');
     if (activeMessages.length === 0) {
@@ -325,8 +409,8 @@ const AiAgent = () => {
     setShareDialogOpen(true);
   };
 
-  const handleOpenShareSession = async (session: ChatSession, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleOpenShareSession = async (session: ChatSession, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!user) return;
 
     if (currentSessionId === session.id) {
@@ -376,48 +460,138 @@ const AiAgent = () => {
     setShareDialogOpen(true);
   };
 
-  const handleSendMessage = async (input: string) => {
-    if (!input.trim() || isLoading) return;
-
-    const userMsgId = Date.now().toString();
-    const userMsg: Message = {
-      id: userMsgId,
-      role: 'user',
-      content: input.trim(),
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMsg]);
+  const executePrompt = async (cleanPrompt: string, originalInputForTitle?: string) => {
     setIsLoading(true);
+    isAtBottomRef.current = true;
+    setShowScrollButton(false);
+    setTimeout(() => scrollToBottom(true), 40);
 
     try {
-      if (user) {
-        await supabase.from('ai_chat_messages').insert({
-          user_id: user.id,
-          role: 'user',
-          content: userMsg.content
-        });
-      }
-
       const history = messages
-        .filter(m => m.id !== 'init')
+        .filter(m => m.id !== 'init' && !m.isError)
         .slice(-20)
-        .map(m => ({ role: m.role, content: m.content }));
+        .map(m => {
+          const parsed = parseSkillCommand(m.content);
+          return { role: m.role, content: parsed.cleanedInput || m.content };
+        });
 
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ prompt: userMsg.content, history })
-      });
+      // Check for skills (/code, /reason, /fast, /smart)
+      const { skill } = parseSkillCommand(originalInputForTitle || cleanPrompt);
+
+      // Model determination & smart token routing
+      let targetModel: AIModelConfig;
+      let fallbackModel: AIModelConfig | null = null;
+      let routedReason: string | undefined = undefined;
+
+      if (skill) {
+        if (skill.targetModelId === 'auto') {
+          const decision = routeQuery(cleanPrompt, history);
+          targetModel = decision.targetModel;
+          fallbackModel = decision.fallbackModel;
+          routedReason = decision.reason;
+        } else {
+          targetModel = AVAILABLE_MODELS.find(m => m.id === skill.targetModelId) || DEFAULT_MODEL;
+          fallbackModel = targetModel.provider === 'gemini'
+            ? (AVAILABLE_MODELS.find(m => m.id === 'openrouter-free') || null)
+            : DEFAULT_MODEL;
+          routedReason = `Skill: ${skill.name} (${skill.command})`;
+        }
+        setActiveRoutedModel(targetModel);
+        setStatusMessage(`Skill ${skill.command}: Invoking ${targetModel.shortName}...`);
+      } else if (selectedModelId === 'auto') {
+        const decision = routeQuery(cleanPrompt, history);
+        targetModel = decision.targetModel;
+        fallbackModel = decision.fallbackModel;
+        routedReason = decision.reason;
+        setActiveRoutedModel(targetModel);
+        setStatusMessage(`Smart Router: Querying ${targetModel.shortName}...`);
+      } else {
+        targetModel = AVAILABLE_MODELS.find(m => m.id === selectedModelId) || DEFAULT_MODEL;
+        fallbackModel = targetModel.provider === 'gemini'
+          ? (AVAILABLE_MODELS.find(m => m.id === 'openrouter-free') || null)
+          : DEFAULT_MODEL;
+        setActiveRoutedModel(targetModel);
+        setStatusMessage(`Querying ${targetModel.shortName}...`);
+      }
+
+      // Pure clean prompt sent to model without any /code, /reason, /fast, /smart command prefixes
+      const promptPayload = cleanPrompt;
+
+      const callModelApi = async (modelToRun: AIModelConfig) => {
+        const endpoint = modelToRun.endpoint;
+        return fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            prompt: promptPayload,
+            history,
+            model: modelToRun.modelIdentifier
+          })
+        });
+      };
+
+      let response: Response;
+      let activeModel = targetModel;
+      let wasFallback = false;
+
+      try {
+        response = await callModelApi(targetModel);
+      } catch (networkErr: any) {
+        if (fallbackModel && fallbackModel.id !== targetModel.id) {
+          console.warn(`[AiAgent] Network error with ${targetModel.name}. Rerouting to ${fallbackModel.name}`);
+          toast({
+            title: "Auto-Rerouting Query",
+            description: `Unable to reach ${targetModel.shortName}. Seamlessly rerouting to ${fallbackModel.shortName}...`
+          });
+          activeModel = fallbackModel;
+          wasFallback = true;
+          setStatusMessage(`Rerouted to ${fallbackModel.shortName}...`);
+          response = await callModelApi(fallbackModel);
+        } else {
+          throw networkErr;
+        }
+      }
+
+      if (!response.ok && fallbackModel && fallbackModel.id !== targetModel.id) {
+        let isRateLimitOrDown = response.status === 429 || response.status === 502 || response.status === 503;
+        let errorDataText = '';
+        try {
+          const errorData = await response.json();
+          errorDataText = errorData.error || '';
+          if (
+            errorDataText.toLowerCase().includes('rate limit') ||
+            errorDataText.toLowerCase().includes('quota') ||
+            errorDataText.toLowerCase().includes('speed cap') ||
+            errorDataText.toLowerCase().includes('slow down') ||
+            errorDataText.toLowerCase().includes('overloaded')
+          ) {
+            isRateLimitOrDown = true;
+          }
+        } catch (e) {
+          // ignore json parse error
+        }
+
+        if (isRateLimitOrDown) {
+          console.warn(`[AiAgent] Speed cap / limit detected on ${targetModel.name}. Rerouting to fallback: ${fallbackModel.name}`);
+          toast({
+            title: "Speed Cap Prevented",
+            description: `${targetModel.shortName} hit rate limit. Seamlessly answered via ${fallbackModel.shortName} to save tokens.`
+          });
+          activeModel = fallbackModel;
+          wasFallback = true;
+          setStatusMessage(`Rerouting to ${fallbackModel.shortName}...`);
+          response = await callModelApi(fallbackModel);
+        }
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to communicate with Nyra');
+        throw new Error(errorData.error || `Failed to communicate with ${activeModel.name}`);
       }
 
       if (!response.body) throw new Error('No stream available');
@@ -429,6 +603,33 @@ const AiAgent = () => {
       const assistantMsgId = (Date.now() + 1).toString();
 
       let fullContent = '';
+      let rafId: number | null = null;
+      let lastRenderTime = 0;
+
+      const scheduleRender = () => {
+        const now = performance.now();
+        // 30ms throttle provides ~33fps DOM updates, completely eliminating CPU lag and jitter
+        if (now - lastRenderTime > 30) {
+          lastRenderTime = now;
+          setMessages(prev => prev.map(m =>
+            m.id === assistantMsgId ? { ...m, content: fullContent } : m
+          ));
+          if (isAtBottomRef.current && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+          }
+        } else if (!rafId) {
+          rafId = requestAnimationFrame(() => {
+            rafId = null;
+            lastRenderTime = performance.now();
+            setMessages(prev => prev.map(m =>
+              m.id === assistantMsgId ? { ...m, content: fullContent } : m
+            ));
+            if (isAtBottomRef.current && scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+            }
+          });
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -438,7 +639,7 @@ const AiAgent = () => {
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
 
-        let chunkAdded = false;
+        let hasNewTokens = false;
 
         for (const line of lines) {
           if (line.startsWith('data: ') && line.trim() !== 'data: [DONE]') {
@@ -455,13 +656,19 @@ const AiAgent = () => {
                     role: 'assistant',
                     content: '',
                     timestamp: new Date(),
-                    isStreaming: true
+                    isStreaming: true,
+                    model: activeModel.shortName,
+                    routedReason: selectedModelId === 'auto' ? routedReason : undefined,
+                    isFallback: wasFallback
                   }]);
                   isFirstChunk = false;
+                  if (isAtBottomRef.current && scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+                  }
                 }
 
                 fullContent += textChunk;
-                chunkAdded = true;
+                hasNewTokens = true;
               }
             } catch (e) {
               // Ignore incomplete JSON chunks
@@ -469,18 +676,35 @@ const AiAgent = () => {
           }
         }
 
-        if (chunkAdded) {
-          setMessages(prev => prev.map(m =>
-            m.id === assistantMsgId ? { ...m, content: fullContent } : m
-          ));
-          scrollToBottom();
+        if (hasNewTokens) {
+          scheduleRender();
         }
       }
 
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+
+      if (!fullContent.trim()) {
+        throw new Error(`The model ${activeModel.shortName} ended without returning any content. Please retry.`);
+      }
+
       setMessages(prev => prev.map(m =>
-        m.id === assistantMsgId ? { ...m, isStreaming: false } : m
+        m.id === assistantMsgId
+          ? {
+            ...m,
+            content: fullContent,
+            isStreaming: false,
+            model: activeModel.shortName,
+            routedReason: selectedModelId === 'auto' ? routedReason : undefined,
+            isFallback: wasFallback
+          }
+          : m
       ));
-      scrollToBottom();
+
+      if (isAtBottomRef.current && scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
 
       if (user && fullContent) {
         await supabase.from('ai_chat_messages').insert({
@@ -491,11 +715,12 @@ const AiAgent = () => {
 
         // Refresh sessions
         const newSessionId = new Date().toDateString();
+        const titleSource = cleanPrompt;
         if (!chatSessions.find(s => s.id === newSessionId)) {
           setChatSessions(prev => [{
             id: newSessionId,
-            title: input.slice(0, 50) + (input.length > 50 ? '...' : ''),
-            preview: input.slice(0, 80),
+            title: titleSource.slice(0, 50) + (titleSource.length > 50 ? '...' : ''),
+            preview: titleSource.slice(0, 80),
             timestamp: new Date(),
             messageCount: 2
           }, ...prev]);
@@ -514,13 +739,57 @@ const AiAgent = () => {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: isRateLimit
-          ? `# **Whoa, Slow Down**\n\nYou're moving faster than we can keep up. You've hit the speed cap for now. Requests will be back shortly.`
-          : `# **System Error**\n\n${errorMessage}`,
-        timestamp: new Date()
+          ? `# **Whoa, Slow Down**\n\nYou've hit the rate limit for this model. Click **Retry** below to resend your prompt.`
+          : `# **Error Generating Response**\n\n${errorMessage}`,
+        timestamp: new Date(),
+        isError: true,
+        failedPrompt: cleanPrompt
       }]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSendMessage = async (input: string) => {
+    const trimmedInput = input.trim();
+    if (!trimmedInput || isLoading) return;
+
+    // Check for skills (/code, /reason, /fast, /smart)
+    const { skill, cleanedInput } = parseSkillCommand(trimmedInput);
+
+    // Strip routing command prefix completely so neither user display nor model prompt contains /code, /reason, etc.
+    const cleanPrompt = (skill ? cleanedInput : trimmedInput) || trimmedInput;
+    if (!cleanPrompt) return;
+
+    const userMsgId = Date.now().toString();
+    const userMsg: Message = {
+      id: userMsgId,
+      role: 'user',
+      content: cleanPrompt,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+
+    if (user) {
+      await supabase.from('ai_chat_messages').insert({
+        user_id: user.id,
+        role: 'user',
+        content: userMsg.content
+      });
+    }
+
+    await executePrompt(cleanPrompt, trimmedInput);
+  };
+
+  const handleRetry = async (failedPrompt: string, errorMsgId: string) => {
+    if (!failedPrompt || isLoading) return;
+
+    // Remove the failed error message from conversation
+    setMessages(prev => prev.filter(m => m.id !== errorMsgId));
+
+    // Re-execute prompt directly without adding duplicate user message
+    await executePrompt(failedPrompt);
   };
 
   const formatDate = (date: Date) => {
@@ -537,14 +806,17 @@ const AiAgent = () => {
     }
   };
 
+  const activeMessages = messages.filter(m => m.id !== 'init');
+  const isNewChat = activeMessages.length === 0;
+
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex   overflow-hidden" style={{ top: '7rem' }}>
+    <div className="fixed inset-0 z-10 flex overflow-hidden">
       {/* Sidebar */}
       <div className={cn(
         "flex-shrink-0 flex flex-col border-r border-[#E5DCCB]/30 bg-transparent backdrop-blur-xl transition-all duration-300 ease-out overflow-hidden",
         sidebarOpen ? "w-64" : "w-0"
       )}>
-        <div className="flex flex-col h-full p-4 min-h-0">
+        <div className="flex flex-col h-full p-4 min-h-0 pt-4">
           {/* New Chat Button */}
           <Button
             onClick={handleNewChat}
@@ -589,25 +861,41 @@ const AiAgent = () => {
                         <span className="ml-auto shrink-0">{session.messageCount} msgs</span>
                       </div> */}
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground h-7 w-7 rounded-full shrink-0"
-                        onClick={(e) => handleOpenShareSession(session, e)}
-                        title="Share Chat"
-                      >
-                        <Share2 className="w-3.5 h-3.5 text-[#8C7654]" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-rose-600 h-7 w-7 rounded-full shrink-0"
-                        onClick={(e) => handleDeleteSession(session.id, e)}
-                        title="Delete Chat"
-                      >
-                        <TbFileShredder className="w-3.5 h-3.5" />
-                      </Button>
+                    <div className="flex items-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-[#2C241B] dark:hover:text-white shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Chat options"
+                          >
+                            <MoreVertical className="w-3.5 h-3.5" />
+                            <span className="sr-only">Chat options</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-40 rounded-2xl bg-[#FDFDFB]/95 dark:bg-[#1E1C18]/95 backdrop-blur-xl border border-[#E5DCCB] dark:border-[#38322D] shadow-[0_15px_35px_rgba(197,168,128,0.18)] p-1.5 z-50 animate-in zoom-in-95 duration-150"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <DropdownMenuItem
+                            onClick={(e) => handleOpenShareSession(session, e)}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold cursor-pointer rounded-xl hover:bg-[#FAF8F5] dark:hover:bg-[#2A2621] text-[#2C241B] dark:text-[#EFEAE2] transition-colors"
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-[#8C7654]" />
+                            <span>Share Chat</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => promptDeleteSession(session, e)}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold cursor-pointer rounded-xl hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 focus:text-rose-600 focus:bg-rose-500/10 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Chat</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
@@ -618,84 +906,131 @@ const AiAgent = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col  min-h-0 relative overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
         {/* Dynamic Background Elements */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
 
-        {/* Toggle Sidebar Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute top-3 left-3 z-50 rounded-full backdrop-blur-md"
-        >
-          {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-        </Button>
+        {/* Top-Left Action Bar: Sidebar Toggle & Share Chat */}
+        <div className="absolute top-3.5 left-3.5 z-30 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="rounded-full h-9 w-9 bg-white/80 dark:bg-[#1E1C18]/80 backdrop-blur-md border border-[#E5DCCB] dark:border-[#38322D] shadow-sm hover:bg-[#FAF8F5] text-[#2C241B] hover:text-[#2C241B] dark:text-[#EFEAE2] transition-transform active:scale-95"
+            title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+          >
+            {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </Button>
 
-        {/* Top Right Action Bar (Share Chat like ChatGPT & Grok) */}
-        {messages.filter(m => m.id !== 'init').length > 0 && (
-          <div className="absolute top-3 right-4 z-50 flex items-center gap-2">
+          {activeMessages.length > 0 && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleOpenShareCurrent}
-              className="rounded-full h-9 px-4 bg-white/80 dark:bg-[#1E1C18]/80 backdrop-blur-md border border-[#E5DCCB] dark:border-[#38322D] shadow-sm hover:bg-[#FAF8F5] dark:hover:bg-[#2A2621] text-xs font-semibold text-[#2C241B] dark:text-[#EFEAE2] flex items-center gap-1.5 transition-all hover:scale-105"
+              className="rounded-full h-9 px-3.5 bg-white/80 dark:bg-[#1E1C18]/80 backdrop-blur-md border border-[#E5DCCB] dark:border-[#38322D] shadow-sm hover:bg-[#FAF8F5] dark:hover:bg-[#2A2621] text-xs font-semibold text-[#2C241B] hover:text-[#2C241B] dark:text-[#EFEAE2] flex items-center gap-1.5 animate-in fade-in duration-200"
             >
               <Share2 className="w-3.5 h-3.5 text-[#8C7654]" />
               <span>Share</span>
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="relative z-10 flex-1 flex flex-col min-h-0">
           {/* Top fade — mirrors the bottom fade on ChatInput */}
           <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-background to-transparent pointer-events-none z-20" />
 
-          <div className="flex-1 overflow-y-auto px-4 md:px-8 lg:px-32 xl:px-48 pb-40 pt-6 custom-scrollbar">
-            {messages.length === 1 && messages[0].id === 'init' && (
-              <div className="flex flex-col items-center justify-center h-full text-center space-y-8 -mt-20">
-                <h1 className="text-6xl md:text-6xl font-medium tracking-tight text-center leading-[1.1]">
-                  <span className="block  opacity-60 text-5xl md:text-6xl mb-4">{getGreeting()},</span>
-                  <span className="bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60 font-sans">
-                    {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
-                  </span>
-                </h1>
-                {/* <p className="text-muted-foreground text-lg md:text-xl max-w-lg mx-auto font-light leading-relaxed">
-                  How can I assist your engineering workflow today?
-                </p> */}
-              </div>
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className={cn(
+              "flex-1 px-4 md:px-8 lg:px-32 xl:px-48 custom-scrollbar",
+              isNewChat
+                ? "flex flex-col justify-center items-center overflow-hidden pb-32 pt-8"
+                : "overflow-y-auto pb-40 pt-16"
             )}
+          >
+            {isNewChat ? (
+              <div className="flex flex-col items-center justify-center text-center space-y-6 max-w-xl mx-auto px-4 select-none animate-in fade-in zoom-in-95 duration-300 -mt-10">
+                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-[#2C241B] to-[#4A3E31] text-[#EFEAE2] flex items-center justify-center shadow-xl border border-white/10">
+                  <RiChatAiFill className="w-8 h-8 md:w-9 md:h-9 text-[#C5A880]" />
+                </div>
 
-            <div className="max-w-6xl mx-auto space-y-8 w-full pb-8">
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} user={user} />
-              ))}
+                <div className="space-y-2">
+                  <h1 className="text-4xl md:text-5xl font-medium tracking-tight text-center leading-[1.15]">
+                    <span className="block opacity-60 text-2xl md:text-3xl font-normal mb-1">{getGreeting()},</span>
+                    <span className="bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 font-sans font-semibold">
+                      {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
+                    </span>
+                  </h1>
+                  <p className="text-muted-foreground text-sm md:text-base font-normal max-w-md mx-auto leading-relaxed pt-1">
+                    What are we building, fixing, or optimizing today?
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-6xl mx-auto space-y-8 w-full pb-8">
+                {activeMessages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    user={user}
+                    onRetry={handleRetry}
+                    isLoading={isLoading}
+                  />
+                ))}
 
-              {isLoading && !messages.some(m => m.isStreaming) && (
-                <div className="flex w-full justify-start mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                  <div className="flex max-w-[85%] gap-4 flex-row items-end">
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white dark:bg-zinc-900 border border-white/20 flex items-center justify-center shrink-0 shadow-2xl overflow-hidden">
-                      <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
-                    </div>
-                    <div className="px-6 py-4 rounded-[2.5rem] border border-white/20 flex items-center gap-3">
-                      <div className="flex gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+                {isLoading && !messages.some(m => m.isStreaming) && (
+                  <div className="flex w-full justify-start mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="flex max-w-[85%] gap-4 flex-row items-end">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white dark:bg-zinc-900 border border-white/20 flex items-center justify-center shrink-0 shadow-2xl overflow-hidden">
+                        <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">Analyzing...</span>
+                      <div className="px-6 py-4 rounded-[2.5rem] border border-white/20 flex items-center gap-3">
+                        <div className="flex gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 max-w-[280px] truncate">
+                          {statusMessage}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
 
-          <ChatInput onSubmit={handleSendMessage} isLoading={isLoading} />
+          {/* Floating Scroll to Bottom Button (Grok / ChatGPT style) */}
+          {showScrollButton && (
+            <button
+              type="button"
+              onClick={() => scrollToBottom(true)}
+              className="absolute bottom-28 right-6 md:right-10 z-30 bg-white/95 dark:bg-zinc-800/95 text-[#2C241B] dark:text-white border border-[#E5DCCB] dark:border-zinc-700 shadow-xl rounded-full p-2.5 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center backdrop-blur-md group animate-in fade-in slide-in-from-bottom-2"
+              title="Scroll to latest message"
+            >
+              <ArrowDown className="w-4 h-4 text-[#8C7654] dark:text-amber-400 group-hover:translate-y-0.5 transition-transform" />
+              {isLoading && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+              )}
+            </button>
+          )}
+
+          <ChatInput
+            onSubmit={handleSendMessage}
+            isLoading={isLoading}
+            selectedModelId={selectedModelId}
+            onSelectModel={handleSelectModel}
+            activeRoutedModel={selectedModelId === 'auto' ? activeRoutedModel : null}
+          />
         </div>
       </div>
 
@@ -706,6 +1041,31 @@ const AiAgent = () => {
         messages={shareChatMessages}
         user={user}
       />
+
+      {/* Delete Chat Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="!rounded-3xl border border-[#E5DCCB] dark:border-[#38322D] bg-[#FDFDFB] dark:bg-[#1C1A17] p-6 shadow-2xl max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-semibold text-[#2C241B] dark:text-[#EFEAE2]">
+              Delete Conversation?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed mt-2">
+              Are you sure you want to delete <span className="font-semibold text-[#2C241B] dark:text-white">"{sessionToDelete?.title}"</span>? This will permanently remove all messages in this conversation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2 mt-4">
+            <AlertDialogCancel className="rounded-full border-[#E5DCCB] dark:border-[#38322D] text-xs font-bold text-[#8C7654] hover:text-[#8C7654] hover:bg-[#C5A880]/10 px-5">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteSession}
+              className="rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-5 shadow-sm transition-all"
+            >
+              Delete Chat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

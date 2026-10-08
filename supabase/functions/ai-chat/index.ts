@@ -19,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, history } = await req.json();
+    const { prompt, history, model } = await req.json();
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: 'Prompt is required' }), {
@@ -135,7 +135,8 @@ serve(async (req) => {
     systemContext += "- If the user asks for a modification, return the fully modified block if appropriate.\n";
 
     // 5. Call Gemini API for Chat
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${encodeURIComponent(GEMINI_API_KEY)}`;
+    const targetModel = (model && typeof model === 'string' && model.startsWith('gemini-')) ? model : 'gemini-1.5-flash';
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/${targetModel}:streamGenerateContent?alt=sse&key=${encodeURIComponent(GEMINI_API_KEY)}`;
 
     const formattedHistory = (history || []).map((msg: any) => ({
       role: msg.role === 'assistant' ? 'model' : 'user',

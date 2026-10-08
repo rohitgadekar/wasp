@@ -3,3 +3,9 @@ project_id = "nslyikktilelnqigidvk"
 # CORS preflight must reach the function; authorization is verified inside the function.
 [functions.manage-user-ban]
 verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.openrouter-chat]
+verify_jwt = false

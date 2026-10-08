@@ -1,10 +1,11 @@
 import React, { useState, memo } from 'react';
-import { User, Copy, Check } from 'lucide-react';
+import { User, Copy, Check, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import remarkGfm from 'remark-gfm';
 
@@ -14,14 +15,21 @@ export type Message = {
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  model?: string;
+  routedReason?: string;
+  isFallback?: boolean;
+  isError?: boolean;
+  failedPrompt?: string;
 };
 
 interface ChatMessageProps {
   message: Message;
   user: any;
+  onRetry?: (failedPrompt: string, errorMsgId: string) => void;
+  isLoading?: boolean;
 }
 
-const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
+const ChatMessage = memo(({ message, user, onRetry, isLoading }: ChatMessageProps) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -43,37 +51,37 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
         "flex max-w-[95%] md:max-w-[85%] gap-4 group",
         message.role === 'user' ? "flex-row-reverse" : "flex-row"
       )}>
-        {/* Avatar with status indicator */}
-        {/* <div className="relative shrink-0 flex flex-col justify-end mb-2">
-          <div className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-2xl  group-hover:scale-110 group-hover:rotate-3",
-            message.role === 'user'
-              ? "bg-[#2C241B] text-primary-foreground"
-              : "bg-white dark:bg-zinc-900 border border-white/20"
-          )}>
-            {message.role === 'user' ? (
-              <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-white">You</span>
-            ) : (
-              <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
-            )}
-          </div>
-          {message.role === 'assistant' && (
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-background shadow-lg shadow-emerald-500/50" />
-          )}
-        </div> */}
-
         <div className={cn(
           "flex flex-col gap-2 min-w-0",
           message.role === 'user' ? "items-end" : "items-start"
         )}>
           {/* Metadata */}
           <div className={cn(
-            "flex items-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-opacity shadow-2xl",
+            "flex items-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-opacity shadow-2xl flex-wrap",
             message.role === 'user' ? "flex-row-reverse" : "flex-row"
           )}>
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60">
               {message.role === 'user' ? 'Me' : 'Nyra'}
             </span>
+
+            {message.role === 'assistant' && message.model && (
+              <>
+                <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                <span
+                  className={cn(
+                    "text-[9px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1",
+                    message.isFallback
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                      : "bg-black/5 dark:bg-white/10 text-muted-foreground/80 border-black/5 dark:border-white/10"
+                  )}
+                  title={message.routedReason || `Generated with ${message.model}`}
+                >
+                  {message.routedReason && <span className="text-amber-500 font-bold">⚡</span>}
+                  {message.model}
+                </span>
+              </>
+            )}
+
             <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
             <span className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-tighter">
               {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -93,7 +101,9 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
             "relative group/bubble px-6 py-4 rounded-[2em] text-[15.5px] leading-relaxed shadow-2xl backdrop-blur-2xl break-words w-full select-text cursor-auto",
             message.role === 'user'
               ? "bg-[#2C241B]/80 text-primary-foreground shadow-primary/20"
-              : "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-3xl border border-black/5 dark:border-white/5 text-foreground shadow-black/5 dark:shadow-black/20"
+              : message.isError
+                ? "bg-rose-50/90 dark:bg-rose-950/20 border border-rose-300/40 dark:border-rose-900/40 text-foreground shadow-rose-500/5"
+                : "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-3xl border border-black/5 dark:border-white/5 text-foreground shadow-black/5 dark:shadow-black/20"
           )}>
             <div className="prose prose-sm dark:prose-invert max-w-none break-words select-text cursor-text">
               <ReactMarkdown
@@ -182,8 +192,31 @@ const ChatMessage = memo(({ message, user }: ChatMessageProps) => {
                   }
                 }}
               >
-                {message.content + (message.isStreaming ? ' ●' : '')}
+                {message.content}
               </ReactMarkdown>
+              {message.isStreaming && (
+                <span className="inline-block w-2 h-4 bg-primary/80 dark:bg-primary/90 ml-1 translate-y-0.5 rounded-sm animate-pulse" />
+              )}
+
+              {/* Retry Button for Unsuccessful / Failed Prompts */}
+              {message.isError && (
+                <div className="mt-4 pt-3.5 border-t border-rose-500/20 flex items-center gap-3 flex-wrap">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRetry?.(message.failedPrompt || '', message.id)}
+                    disabled={isLoading}
+                    className="rounded-full h-8 px-4 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    <RotateCcw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+                    <span>{isLoading ? 'Retrying...' : 'Retry'}</span>
+                  </Button>
+                  <span className="text-[11px] text-muted-foreground/70">
+                    Click to resend this prompt
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

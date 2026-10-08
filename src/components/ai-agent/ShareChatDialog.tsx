@@ -261,9 +261,8 @@ export const ShareChatDialog: React.FC<ShareChatDialogProps> = ({
         ) : (
           <div className="space-y-4">
             <div className="rounded-xl bg-[#C5A880]/10 border border-[#C5A880]/20 p-3.5 flex items-start gap-3">
-              <Sparkles className="w-4 h-4 text-[#8C7654] shrink-0 mt-0.5" />
               <p className="text-xs text-[#5C5040] dark:text-[#D4C3AB] leading-relaxed">
-                Click below to generate a shareable snapshot link. Anyone with the link will be able to read this chat.
+                Click below to generate a shareable link. Anyone with the link will be able to read this chat.
               </p>
             </div>
 

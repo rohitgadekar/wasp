@@ -19,8 +19,8 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, history } = await req.json();
-    console.log(`[OpenRouterChat] Received prompt: "${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}"`);
+    const { prompt, history, model } = await req.json();
+    console.log(`[OpenRouterChat] Received prompt: "${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}" (model: ${model || 'default'})`);
     console.log(`[OpenRouterChat] History length: ${history?.length || 0} messages`);
 
     if (!prompt) {
@@ -62,50 +62,48 @@ serve(async (req) => {
       });
     }
 
-    // 2. RAG: Generate Embedding for the User Prompt using the internal edge function
-    console.log('[OpenRouterChat] Generating query embedding...');
-    const embedResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/openrouter-generate-embedding`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ text: prompt })
-    });
+    // 2. RAG: Generate Embedding for the User Prompt using the internal edge function (graceful fallback)
+    let snippets: any[] = [];
+    let wikiPages: any[] = [];
+    try {
+      console.log('[OpenRouterChat] Attempting query embedding...');
+      const embedResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/openrouter-generate-embedding`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: prompt })
+      });
 
-    if (!embedResponse.ok) {
-      const errorData = await embedResponse.text();
-      console.error('[OpenRouterChat] Embedding Generation Failed:', errorData);
-      throw new Error(`Failed to generate query embedding: ${errorData}`);
+      if (embedResponse.ok) {
+        const { embedding: query_embedding } = await embedResponse.json();
+        if (query_embedding) {
+          const { data: matchedSnippets } = await supabaseAdmin.rpc('match_code_snippets_openrouter', {
+            query_embedding,
+            match_threshold: 0.3,
+            match_count: 5
+          });
+          if (matchedSnippets) snippets = matchedSnippets;
+
+          const { data: matchedWiki } = await supabaseAdmin.rpc('match_wiki_pages_openrouter', {
+            query_embedding,
+            match_threshold: 0.3,
+            match_count: 3
+          });
+          if (matchedWiki) wikiPages = matchedWiki;
+        }
+      } else {
+        console.warn('[OpenRouterChat] Embedding service returned non-200. Proceeding with general knowledge.');
+      }
+    } catch (ragErr) {
+      console.warn('[OpenRouterChat] RAG retrieval skipped:', ragErr);
     }
-    const { embedding: query_embedding } = await embedResponse.json();
-    console.log('[OpenRouterChat] Successfully generated 2048-dim embedding.');
 
-    // 3. RAG: Perform Semantic Search using the new RPCs
-    console.log('[OpenRouterChat] Performing semantic search in database...');
-    const { data: snippets, error: snippetsError } = await supabaseAdmin.rpc('match_code_snippets_openrouter', {
-      query_embedding,
-      match_threshold: 0.3,
-      match_count: 5
-    });
-
-    const { data: wikiPages, error: wikiError } = await supabaseAdmin.rpc('match_wiki_pages_openrouter', {
-      query_embedding,
-      match_threshold: 0.3,
-      match_count: 3
-    });
-
-    if (snippetsError) console.error('[OpenRouterChat] Error fetching snippets:', snippetsError);
-    if (wikiError) console.error('[OpenRouterChat] Error fetching wiki pages:', wikiError);
-
-    console.log(`[OpenRouterChat] RAG Results - Snippets: ${snippets?.length || 0}, Wiki Pages: ${wikiPages?.length || 0}`);
-
-    // 4. Construct the System Prompt
+    // 4. Construct the System Prompt (aligned identically with ai-chat)
     let systemContext = "You are Nyra, an elite, highly skilled developer assistant embedded within the Wasp application.\n";
-    systemContext += "You have access to the following RELEVANT code snippets and wiki documentation retrieved from the organization's knowledge base. Use them to provide highly contextual, error-free answers.\n\n";
-    systemContext += "When referencing a provided snippet, NEVER just say 'using Snippet X'. Instead, explicitly state the snippet's title and SHOW the actual method or code being used in your response.\n";
-    systemContext += "If the user asks for a modification, return the fully modified block if appropriate.\n";
-
+    systemContext += "You have access to the following RELEVANT code snippets and wiki documentation retrieved from the organization's knowledge base. Use them to provide highly contextual, error-free answers.\n";
+    systemContext += "Additionally, you are aware that this Wasp application contains a Map Generator page (for visualizing and creating maps) and a Document Finder page (for searching documents). You can suggest the user visit these pages if their query is related to maps or finding documents.\n\n";
 
     if (snippets && snippets.length > 0) {
       systemContext += "--- RELEVANT REPOSITORY CODE SNIPPETS ---\n\n";
@@ -126,10 +124,15 @@ serve(async (req) => {
       });
     }
 
+    if ((!snippets || snippets.length === 0) && (!wikiPages || wikiPages.length === 0)) {
+      systemContext += "(No highly relevant snippets or wiki pages were found for this specific query. Answer based on general programming knowledge but encourage the user to add more context to their code library or wiki.)\n\n";
+    }
+
     systemContext += "Instructions:\n";
     systemContext += "- Always provide error-free, copy-pasteable code.\n";
+    systemContext += "- When referencing a provided snippet, NEVER just say 'using Snippet X'. Instead, explicitly state the snippet's title and SHOW the actual method or code being used in your response.\n";
     systemContext += "- Maintain a professional, helpful, and elite tone as Nyra.\n";
-    systemContext += "- If context is missing, answer based on general programming knowledge but encourage the user to add more to their library.\n";
+    systemContext += "- If the user asks for a modification, return the fully modified block if appropriate.\n";
 
     console.log(`[OpenRouterChat] System Context constructed. Length: ${systemContext.length} chars.`);
 
@@ -143,8 +146,10 @@ serve(async (req) => {
       { role: 'user', content: prompt }
     ];
 
-    console.log('[OpenRouterChat] Calling OpenRouter API (nemotron-3-super-120b-a12b)...');
-    const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const requestedModel = (model && typeof model === 'string') ? model : "openrouter/free";
+    console.log(`[OpenRouterChat] Calling OpenRouter API (model: ${requestedModel})...`);
+
+    let openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -153,11 +158,34 @@ serve(async (req) => {
         'X-Title': 'Wasp App'
       },
       body: JSON.stringify({
-        model: "nvidia/nemotron-3-super-120b-a12b:free",
+        model: requestedModel,
         messages,
+        temperature: 0.2,
         stream: true
       })
     });
+
+    // If requested model is unavailable for free or returns 404, auto-fallback to openrouter/free
+    if (!openRouterResponse.ok && requestedModel !== "openrouter/free") {
+      const errorText = await openRouterResponse.text();
+      console.warn(`[OpenRouterChat] Model ${requestedModel} failed (${openRouterResponse.status}): ${errorText}. Falling back to openrouter/free...`);
+
+      openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'https://supabase.com',
+          'X-Title': 'Wasp App'
+        },
+        body: JSON.stringify({
+          model: "openrouter/free",
+          messages,
+          temperature: 0.2,
+          stream: true
+        })
+      });
+    }
 
     if (!openRouterResponse.ok) {
       const errorText = await openRouterResponse.text();
