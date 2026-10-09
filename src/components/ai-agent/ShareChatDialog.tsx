@@ -48,7 +48,7 @@ export const ShareChatDialog: React.FC<ShareChatDialogProps> = ({
   currentShareId: propShareId,
   onShareCreated,
 }) => {
-  const [shareTitle, setShareTitle] = useState(initialTitle || 'Nyra AI Conversation');
+  const [shareTitle, setShareTitle] = useState(initialTitle || 'Lumen AI Conversation');
   const [shareId, setShareId] = useState<string | null>(propShareId || null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -64,7 +64,7 @@ export const ShareChatDialog: React.FC<ShareChatDialogProps> = ({
   }, [initialTitle, propShareId]);
 
   const activeMessages = messages.filter((m) => m.id !== 'init');
-  const shareUrl = shareId ? `${window.location.origin}/ai-agent/share/${shareId}` : '';
+  const shareUrl = shareId ? `${window.location.origin}/lumen/share/${shareId}` : '';
 
   const handleCreateOrUpdate = async () => {
     if (activeMessages.length === 0) {
@@ -80,7 +80,7 @@ export const ShareChatDialog: React.FC<ShareChatDialogProps> = ({
     try {
       const result = await createOrUpdateSharedChat({
         shareId: shareId || undefined,
-        title: shareTitle.trim() || 'Nyra AI Conversation',
+        title: shareTitle.trim() || 'Lumen AI Conversation',
         messages,
         user,
       });
@@ -88,7 +88,7 @@ export const ShareChatDialog: React.FC<ShareChatDialogProps> = ({
       setShareId(result.shareId);
       onShareCreated?.(result.shareId);
 
-      const url = `${window.location.origin}/ai-agent/share/${result.shareId}`;
+      const url = `${window.location.origin}/lumen/share/${result.shareId}`;
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);

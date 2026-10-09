@@ -11,9 +11,20 @@
     },
     "api/status.ts": {
       "includeFiles": "dist/index.html"
+    },
+    "api/lumen.ts": {
+      "includeFiles": "dist/index.html"
     }
   },
   "rewrites": [
+    {
+      "source": "/lumen/share/:id*",
+      "destination": "/api/lumen?id=:id*"
+    },
+    {
+      "source": "/ai-agent/share/:id*",
+      "destination": "/api/lumen?id=:id*"
+    },
     {
       "source": "/s/:id*",
       "destination": "/api/snippet?id=:id*"

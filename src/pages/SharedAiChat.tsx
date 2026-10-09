@@ -40,7 +40,7 @@ export const SharedAiChat: React.FC = () => {
   const { isSuperUser } = useUserRole();
   const navigate = useNavigate();
 
-  useTitle(chat?.title ? `${chat.title} - Nyra AI` : 'Shared Chat - Nyra AI');
+  useTitle(chat?.title ? `${chat.title} - Lumen AI` : 'Shared Chat - Lumen AI');
 
   useEffect(() => {
     const fetchChat = async () => {
@@ -89,7 +89,7 @@ export const SharedAiChat: React.FC = () => {
     if (!user) {
       toast({
         title: 'Sign in required',
-        description: 'Please sign in to continue this conversation in Nyra AI.',
+        description: 'Please sign in to continue this conversation in Lumen AI.',
       });
       navigate('/auth', { state: { returnTo: window.location.pathname } });
       return;
@@ -99,13 +99,13 @@ export const SharedAiChat: React.FC = () => {
       toast({
         variant: 'destructive',
         title: 'Access Restricted',
-        description: 'Nyra AI is reserved for workspace owners and managers.',
+        description: 'Lumen AI is reserved for workspace owners and managers.',
       });
       return;
     }
 
     if (!chat || !chat.messages || chat.messages.length === 0) {
-      navigate('/ai-agent');
+      navigate('/lumen');
       return;
     }
 
@@ -127,10 +127,10 @@ export const SharedAiChat: React.FC = () => {
 
       toast({
         title: 'Conversation copied!',
-        description: 'Opened in your Nyra AI workspace.',
+        description: 'Opened in your Lumen AI workspace.',
       });
 
-      navigate('/ai-agent', {
+      navigate('/lumen', {
         state: {
           importedMessages: chat.messages,
           importedTitle: chat.title,
@@ -139,7 +139,7 @@ export const SharedAiChat: React.FC = () => {
       });
     } catch (err: any) {
       console.error('Failed to import chat:', err);
-      navigate('/ai-agent', {
+      navigate('/lumen', {
         state: {
           importedMessages: chat.messages,
           importedTitle: chat.title,
@@ -210,7 +210,7 @@ export const SharedAiChat: React.FC = () => {
                 <RiChatAiFill className="w-5 h-5 text-[#C5A880]" />
               </div>
               <div className="flex flex-col">
-                <span className="font-heading font-bold text-sm tracking-tight">Nyra AI</span>
+                <span className="font-heading font-bold text-sm tracking-tight">Lumen AI</span>
                 <span className="text-[9px] uppercase tracking-widest text-[#8C7654] font-bold">
                   Shared Chat
                 </span>
@@ -241,7 +241,7 @@ export const SharedAiChat: React.FC = () => {
                 ) : (
                   <Bot className="w-3.5 h-3.5" />
                 )}
-                <span>{isImporting ? 'Copying...' : 'Continue in Nyra'}</span>
+                <span>{isImporting ? 'Copying...' : 'Continue in Lumen'}</span>
               </Button>
             ) : (
               <Button
@@ -250,7 +250,7 @@ export const SharedAiChat: React.FC = () => {
                 className="h-9 rounded-full bg-[#2C241B] dark:bg-[#EFEAE2] text-white dark:text-[#2C241B] hover:opacity-90 text-xs font-semibold px-4 flex items-center gap-1.5"
               >
                 <Bot className="w-3.5 h-3.5" />
-                <span>Try Nyra AI</span>
+                <span>Try Lumen AI</span>
               </Button>
             )}
           </div>
@@ -314,7 +314,7 @@ export const SharedAiChat: React.FC = () => {
                   {/* Sender Label */}
                   <div className="flex items-center gap-2 px-3">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60">
-                      {message.role === 'user' ? (chat.shared_by_name || 'User') : 'Nyra'}
+                      {message.role === 'user' ? (chat.shared_by_name || 'User') : 'Lumen'}
                     </span>
                   </div>
 
@@ -395,10 +395,10 @@ export const SharedAiChat: React.FC = () => {
         <div className="mt-16 p-6 rounded-3xl border border-[#E5DCCB]/80 dark:border-[#332E28] bg-white/60 dark:bg-[#1A1815] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div className="space-y-1">
             <h4 className="font-heading font-bold text-sm text-[#2C241B] dark:text-white">
-              Continue this conversation in Nyra
+              Continue this conversation in Lumen
             </h4>
             <p className="text-xs text-muted-foreground">
-              Clone this conversation into your Nyra AI history and continue asking questions.
+              Clone this conversation into your Lumen AI history and continue asking questions.
             </p>
           </div>
           <Button

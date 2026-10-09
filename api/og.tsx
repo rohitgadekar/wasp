@@ -8,6 +8,7 @@ export default async function handler(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
 
+        const badge = searchParams.get('badge')?.slice(0, 50) || 'Wasp';
         const title = searchParams.get('title')?.slice(0, 100) || 'Wasp';
         const description = searchParams.get('description')?.slice(0, 200) || '';
 
@@ -34,7 +35,7 @@ export default async function handler(request: Request) {
                             marginBottom: 40,
                         }}
                     >
-                        Wasp
+                        {badge}
                     </div>
 
                     <div

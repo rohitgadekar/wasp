@@ -46,7 +46,7 @@
 // src/hooks/useTitle.ts
 import { useEffect } from 'react';
 
-export const useTitle = (title: string, description?: string) => {
+export const useTitle = (title?: string, description?: string, badge?: string) => {
     useEffect(() => {
         const fullTitle = title ? `${title} • Wasp` : 'Wasp';
         document.title = fullTitle;
@@ -83,6 +83,7 @@ export const useTitle = (title: string, description?: string) => {
         const params = new URLSearchParams();
         if (title) params.set('title', title);
         if (description) params.set('description', description);
+        if (badge) params.set('badge', badge);
 
         const ogImageUrl = `${window.location.origin}/api/og?${params.toString()}`;
 
@@ -93,6 +94,15 @@ export const useTitle = (title: string, description?: string) => {
             document.head.appendChild(ogImage);
         }
         ogImage.setAttribute('content', ogImageUrl);
+
+        // og:url
+        let ogUrl = document.querySelector('meta[property="og:url"]');
+        if (!ogUrl) {
+            ogUrl = document.createElement('meta');
+            ogUrl.setAttribute('property', 'og:url');
+            document.head.appendChild(ogUrl);
+        }
+        ogUrl.setAttribute('content', window.location.href);
 
         // Twitter
         let twitterImage = document.querySelector('meta[name="twitter:image"]');
@@ -114,5 +124,5 @@ export const useTitle = (title: string, description?: string) => {
         return () => {
             document.title = 'Wasp';
         };
-    }, [title, description]);
+    }, [title, description, badge]);
 };
