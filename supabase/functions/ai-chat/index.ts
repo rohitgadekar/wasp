@@ -101,7 +101,7 @@ serve(async (req) => {
     if (wikiError) console.error('Error fetching wiki pages:', wikiError);
 
     // 4. Construct the System Prompt with retrieved context
-    let systemContext = "You are Nyra, an elite, highly skilled developer assistant embedded within the Wasp application.\n";
+    let systemContext = "You are Lumen, an elite, highly skilled developer assistant embedded within the Wasp application.\n";
     systemContext += "You have access to the following RELEVANT code snippets and wiki documentation retrieved from the organization's knowledge base. Use them to provide highly contextual, error-free answers.\n";
     systemContext += "Additionally, you are aware that this Wasp application contains a Map Generator page (for visualizing and creating maps) and a Document Finder page (for searching documents). You can suggest the user visit these pages if their query is related to maps or finding documents.\n\n";
 
@@ -131,7 +131,7 @@ serve(async (req) => {
     systemContext += "Instructions:\n";
     systemContext += "- Always provide error-free, copy-pasteable code.\n";
     systemContext += "- When referencing a provided snippet, NEVER just say 'using Snippet X'. Instead, explicitly state the snippet's title and SHOW the actual method or code being used in your response.\n";
-    systemContext += "- Maintain a professional, helpful, and elite tone as Nyra.\n";
+    systemContext += "- Maintain a professional, helpful, and elite tone as Lumen.\n";
     systemContext += "- If the user asks for a modification, return the fully modified block if appropriate.\n";
 
     // 5. Call Gemini API for Chat

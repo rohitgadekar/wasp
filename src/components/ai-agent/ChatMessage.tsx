@@ -61,7 +61,7 @@ const ChatMessage = memo(({ message, user, onRetry, isLoading }: ChatMessageProp
             message.role === 'user' ? "flex-row-reverse" : "flex-row"
           )}>
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60">
-              {message.role === 'user' ? 'Me' : 'Nyra'}
+              {message.role === 'user' ? 'Me' : 'Lumen'}
             </span>
 
             {message.role === 'assistant' && message.model && (

@@ -269,7 +269,7 @@ const ChatInput = ({
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Nyra anything or type /code or /reason for dedicated skills..."
+              placeholder="Ask Lumen anything or type /code or /reason for dedicated skills..."
               rows={1}
               className={cn(
                 "w-full bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-6 resize-none text-[15px] font-normal placeholder:text-muted-foreground/40 custom-scrollbar leading-relaxed",

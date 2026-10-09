@@ -36,7 +36,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [showBanner, setShowBanner] = useState(false);
 
   // AI Agent minimized bubble navbar state
-  const isAiAgent = location.pathname === '/ai-agent' || location.pathname.startsWith('/ai-agent');
+  const isAiAgent = location.pathname === '/lumen' || location.pathname.startsWith('/lumen');
   const [isNavHovered, setIsNavHovered] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);

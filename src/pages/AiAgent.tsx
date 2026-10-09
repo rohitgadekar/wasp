@@ -67,7 +67,7 @@ const AiAgent = () => {
 
   // Multi-model selection & smart token routing state
   const [selectedModelId, setSelectedModelId] = useState<string>(() => {
-    const saved = localStorage.getItem('nyra_selected_model');
+    const saved = localStorage.getItem('Lumen_selected_model');
     if (saved && AVAILABLE_MODELS.some(m => m.id === saved)) {
       return saved;
     }
@@ -253,7 +253,7 @@ const AiAgent = () => {
     setShowScrollButton(false);
   };
 
-  useTitle('Nyra AI', 'Codebase Intelligence Assistant');
+  useTitle('Lumen AI', 'Codebase Intelligence Assistant');
 
   if (roleLoading) {
     return (
@@ -288,7 +288,7 @@ const AiAgent = () => {
               Not Authorized
             </h1>
             <p className="text-xs md:text-sm leading-relaxed">
-              You are not authorized to access this feature. Nyra AI is reserved for workspace owners and managers.
+              You are not authorized to access this feature. Lumen AI is reserved for workspace owners and managers.
             </p>
           </div>
 
@@ -321,7 +321,7 @@ const AiAgent = () => {
 
   const handleSelectModel = (modelId: string) => {
     setSelectedModelId(modelId);
-    localStorage.setItem('nyra_selected_model', modelId);
+    localStorage.setItem('Lumen_selected_model', modelId);
     const found = AVAILABLE_MODELS.find(m => m.id === modelId);
     if (found && modelId !== 'auto') {
       setActiveRoutedModel(found);
@@ -402,7 +402,7 @@ const AiAgent = () => {
     const firstUserMsg = activeMessages.find(m => m.role === 'user');
     const defaultTitle = firstUserMsg
       ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '')
-      : 'Nyra AI Conversation';
+      : 'Lumen AI Conversation';
 
     setShareChatTitle(defaultTitle);
     setShareChatMessages(messages);
@@ -986,7 +986,7 @@ const AiAgent = () => {
                   <div className="flex w-full justify-start mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <div className="flex max-w-[85%] gap-4 flex-row items-end">
                       <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white dark:bg-zinc-900 border border-white/20 flex items-center justify-center shrink-0 shadow-2xl overflow-hidden">
-                        <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Nyra</span>
+                        <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-[#8C7654]">Lumen</span>
                       </div>
                       <div className="px-6 py-4 rounded-[2.5rem] border border-white/20 flex items-center gap-3">
                         <div className="flex gap-1.5">

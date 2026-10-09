@@ -148,14 +148,14 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/ai-agent" element={
+            <Route path="/lumen" element={
               <ProtectedRoute>
                 <Layout>
                   <AiAgent />
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/ai-agent/share/:shareId" element={<SharedAiChat />} />
+            <Route path="/lumen/share/:shareId" element={<SharedAiChat />} />
             <Route path="/hive" element={
               <ProtectedRoute>
                 <Layout>
