@@ -46,7 +46,7 @@ const Hive = () => {
 
   // Extension download URL
   const downloadUrl =
-    "https://nslyikktilelnqigidvk.supabase.co/storage/v1/object/public/extension/hive%20v1.3.0.zip";
+    "https://nslyikktilelnqigidvk.supabase.co/storage/v1/object/public/extension/hive%20v1.4.0.zip";
 
   const steps = [
     {
