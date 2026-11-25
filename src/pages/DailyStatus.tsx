@@ -189,7 +189,8 @@ const DailyStatus = () => {
         'amit.gilda@bristlecone.com',
         'pankaj.patil@bristlecone.com',
         'aditya.sanjay.dahe@bristlecone.com',
-        'anil.panigrahi@bristlecone.com'
+        'anil.panigrahi@bristlecone.com',
+        'pratyush.yadav@bristlecone.com'
     ].map(e => e.toLowerCase()), []);
 
     // Fetch task statuses with TanStack Query
@@ -828,7 +829,7 @@ const DailyStatus = () => {
         await exportToPNG();
 
         const subject = `Daily Activity Report - ${format(selectedDate, 'PPPP')}`;
-        const cc = "aakanksha.jain@bristlecone.com,Rohit.Gadekar@bristlecone.com,Divyansh.Singh@bristlecone.com,mouli.maiti@bristlecone.com,ayush.tyagi@bristlecone.com,anil.panigrahi@bristlecone.com,vitthal.dhakane@bristlecone.com,shubham.chakraborty@bristlecone.com,namrata.singh1@bristlecone.com,prabhavati.jadhav@bristlecone.com,pratyush.yadav@bristlecone.com"; // Add default CC if needed
+        const cc = "aakanksha.jain@bristlecone.com,Rohit.Gadekar@bristlecone.com,Divyansh.Singh@bristlecone.com,mouli.maiti@bristlecone.com,ayush.tyagi@bristlecone.com,anil.panigrahi@bristlecone.com,vitthal.dhakane@bristlecone.com,shubham.chakraborty@bristlecone.com,namrata.singh1@bristlecone.com,prabhavati.jadhav@bristlecone.com"; // Add default CC if needed
 
         let body = `Hello Pankaj,\n\nPlease find logs for ${format(selectedDate, 'PPPP')}. A snapshot has been attached for quick reference.\n\n`;
 
